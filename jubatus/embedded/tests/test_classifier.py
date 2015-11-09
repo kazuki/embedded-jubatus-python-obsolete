@@ -1,4 +1,4 @@
-from jubatus.embedded.native import Classifier
+from jubatus.embedded import Classifier
 from jubatus.common import Datum
 
 def test():

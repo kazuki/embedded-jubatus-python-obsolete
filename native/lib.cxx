@@ -17,7 +17,7 @@ static PyMethodDef JubatusEmbeddedMethods[] = {
 #ifdef IS_PY3
 static struct PyModuleDef JubatusEmbeddedModule = {
     PyModuleDef_HEAD_INIT,
-    "native",
+    "embedded",
     NULL,
     -1,
     JubatusEmbeddedMethods
@@ -30,9 +30,9 @@ static struct PyModuleDef JubatusEmbeddedModule = {
 extern "C" {
 PyMODINIT_FUNC
 #ifdef IS_PY3
-PyInit_native(void)
+PyInit_embedded(void)
 #else
-initnative(void)
+initembedded(void)
 #endif
 {
     for (int i = 0; _EmbeddedTypes[i]; ++i) {
@@ -45,7 +45,7 @@ initnative(void)
 #ifdef IS_PY3
         PyModule_Create(&JubatusEmbeddedModule);
 #else
-        Py_InitModule("native", JubatusEmbeddedMethods);
+        Py_InitModule("embedded", JubatusEmbeddedMethods);
 #endif
     if (!m)
         return MODINIT_RETURN_WRAP(NULL);
