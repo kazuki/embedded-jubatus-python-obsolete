@@ -5,8 +5,6 @@
 #include <jubatus/core/classifier/classifier_factory.hpp>
 #include "lib.hpp"
 
-#include <iostream>
-
 #ifdef IS_PY3
 static PyTypeObject *EstimateResultType = NULL;
 #else
@@ -15,15 +13,25 @@ static PyClassObject *EstimateResultType = NULL;
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 {
-    jubatus::util::text::json::json converter_json = jubatus::util::lang::lexical_cast<jubatus::util::text::json::json>(
-        "{\"num_filter_types\": {}, \"num_filter_rules\": [], \"string_filter_types\": {}, \"string_filter_rules\": [],"
-        "\"num_types\": {}, \"num_rules\": [{\"key\": \"*\", \"type\": \"num\"}], \"string_types\": {}, \"string_rules\": ["
-        "{\"key\": \"*\", \"type\": \"space\", \"sample_weight\": \"bin\", \"global_weight\": \"bin\"}]}");
+    PyObject *py_config_obj;
+    if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &py_config_obj))
+        return 0;
+    std::string str_config_json;
+    if (!PyDictToJson(py_config_obj, str_config_json))
+        return 0;
+
+    jubatus::util::text::json::json config_json =
+        jubatus::util::lang::lexical_cast<jubatus::util::text::json::json>(str_config_json);
+    jubatus::util::text::json::json_string *method_value =
+        (jubatus::util::text::json::json_string*)config_json["method"].get();
+    if (!method_value || method_value->type() != jubatus::util::text::json::json::String)
+        return 0;
+
     jubatus::core::fv_converter::converter_config converter_conf;
-    jubatus::util::text::json::from_json(converter_json, converter_conf);
-    jubatus::core::common::jsonconfig::config param;
+    jubatus::util::text::json::from_json(config_json["converter"], converter_conf);
+    jubatus::core::common::jsonconfig::config param(config_json["parameter"]);
     self->handle = jubatus::core::classifier::classifier_factory::create_classifier
-        ("perceptron", param, jubatus::core::storage::storage_factory::create_storage("local"));
+        (method_value->get(), param, jubatus::core::storage::storage_factory::create_storage("local"));
     self->converter = jubatus::core::fv_converter::make_fv_converter(converter_conf, NULL);
 
     if (!EstimateResultType) {
@@ -34,7 +42,6 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 #else
             EstimateResultType = (PyClassObject*)PyObject_GetAttrString(m, "EstimateResult");
 #endif
-            Py_INCREF(EstimateResultType);
             Py_DECREF(m);
         }
     }

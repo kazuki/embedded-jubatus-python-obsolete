@@ -96,3 +96,31 @@ int PyDatumToNativeDatum(PyObject *py_datum, jubatus::core::fv_converter::datum 
     }
     return 1;
 }
+
+int PyDictToJson(PyObject *py_dict, std::string &out)
+{
+    PyObject *m = PyImport_ImportModule("json"); // return: new-ref
+    if (!m) return 0;
+    int ret_code = 0;
+    PyObject *dump_method = PyObject_GetAttrString(m, "dumps"); // return: new-ref
+    if (dump_method) {
+        PyObject *args = PyTuple_New(1); // return: new-ref
+        Py_INCREF(py_dict);
+        PyTuple_SetItem(args, 0, py_dict); // steals py_dict ref
+        PyObject *kwargs = PyDict_New(); // return: new-ref
+        PyObject *false_obj = Py_False;
+        Py_INCREF(Py_False);
+        PyDict_SetItemString(kwargs, "ensure_ascii", false_obj); // steals false_obj ref
+        PyObject *json_str = PyObject_Call(dump_method, args, kwargs); // return: new-ref
+        if (json_str) {
+            if (PyUnicodeToUTF8(json_str, out))
+                ret_code = 1;
+            Py_DECREF(json_str);
+        }
+        Py_DECREF(args);
+        Py_DECREF(kwargs);
+        Py_DECREF(dump_method);
+    }
+    Py_DECREF(m);
+    return ret_code;
+}
