@@ -11,6 +11,7 @@ setup(name='embedded-jubatus',
       ext_modules=[
           Extension('jubatus.embedded', [
               'native/lib.cxx',
+              'native/helper.cxx',
               'native/classifier.cxx'
           ], include_dirs=['native'], libraries=['jubatus_core'])
       ]

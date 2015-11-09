@@ -17,6 +17,8 @@ typedef struct {
 } ClassifierObject;
 
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
+int PyBytesToNative(PyObject *py_bin, std::string &out);
+int PyNumberToDouble(PyObject *py_num, double &out);
 int PyDatumToNativeDatum(PyObject *py_datum, jubatus::core::fv_converter::datum &datum);
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs);
