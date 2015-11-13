@@ -1,3 +1,4 @@
+from io import BytesIO
 from jubatus.embedded import Classifier
 from jubatus.common import Datum
 
@@ -32,6 +33,29 @@ def test_classifier_num():
     ])
     assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
             for z in y] == ['Y', 'N']
+    assert sorted(x.get_labels()) == [u'N', u'Y']
+
+    model = x.dump()
+
+    x.clear()
+    assert len(x.get_labels()) == 0
+    x.set_label(u'Y')
+    x.set_label(u'N')
+    assert sorted(x.get_labels()) == [u'N', u'Y']
+    x.delete_label(u'Y')
+    assert x.get_labels() == [u'N']
+
+    x.clear()
+    assert len(x.get_labels()) == 0
+
+    x.load(model)
+    y = x.classify([
+        Datum({'x': 1}),
+        Datum({'x': -1})
+    ])
+    assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
+            for z in y] == ['Y', 'N']
+    assert sorted(x.get_labels()) == [u'N', u'Y']
 
 def test_classifier_str():
     x = Classifier(CLASSIFIER_CONFIG);

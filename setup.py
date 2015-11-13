@@ -13,6 +13,6 @@ setup(name='embedded-jubatus',
               'native/lib.cxx',
               'native/helper.cxx',
               'native/classifier.cxx'
-          ], include_dirs=['native'], libraries=['jubatus_core'])
+          ], include_dirs=['native'], libraries=['jubatus_core', 'jubaserv_common'])
       ]
 )

@@ -1,5 +1,16 @@
 #include <Python.h>
+#include <jubatus/config.hpp>
+#include <jubatus/core/common/big_endian.hpp>
+#include <jubatus/core/framework/packer.hpp>
+#include <jubatus/core/framework/stream_writer.hpp>
+#include <jubatus/server/common/crc32.hpp>
+#include <cstdio>
+#include <cstring>
+#include <ctime>
 #include "lib.hpp"
+
+using jubatus::core::common::write_big_endian;
+using jubatus::core::common::read_big_endian;
 
 /*
  * Pythonの文字列型(Unicode, Py2のみString)を，UTF8で符号化されたstd::stringに変換する
@@ -108,9 +119,12 @@ int PyDictToJson(PyObject *py_dict, std::string &out)
         Py_INCREF(py_dict);
         PyTuple_SetItem(args, 0, py_dict); // steals py_dict ref
         PyObject *kwargs = PyDict_New(); // return: new-ref
+        PyObject *true_obj = Py_True;
         PyObject *false_obj = Py_False;
-        Py_INCREF(Py_False);
+        Py_INCREF(true_obj);
+        Py_INCREF(false_obj);
         PyDict_SetItemString(kwargs, "ensure_ascii", false_obj); // steals false_obj ref
+        PyDict_SetItemString(kwargs, "sort_keys", true_obj); // steals true_obj ref
         PyObject *json_str = PyObject_Call(dump_method, args, kwargs); // return: new-ref
         if (json_str) {
             if (PyUnicodeToUTF8(json_str, out))
@@ -123,4 +137,163 @@ int PyDictToJson(PyObject *py_dict, std::string &out)
     }
     Py_DECREF(m);
     return ret_code;
+}
+
+static const char magic_number[8] = "jubatus";
+static const uint64_t system_data_container_version = 1;
+static const uint64_t format_version = 1;
+
+static uint32_t jubatus_version_major = -1;
+static uint32_t jubatus_version_minor = -1;
+static uint32_t jubatus_version_maintenance = -1;
+
+static void _InitJubatusVersion()
+{
+    if (jubatus_version_major == static_cast<uint32_t>(-1)) {
+        int major, minor, maintenance;
+        std::sscanf(JUBATUS_VERSION, "%d.%d.%d", &major, &minor, &maintenance);  // NOLINT
+        jubatus_version_major = major;
+        jubatus_version_minor = minor;
+        jubatus_version_maintenance = maintenance;
+    }
+}
+
+PyObject* SerializeModel(const std::string& type_, const std::string& config_, const std::string& id_,
+                         const msgpack::sbuffer& user_data_buf)
+{
+    // ダンプイメージはコア実装ではなくサーバ実装に依存するため
+    // Jubatusサーバのダンプと互換性のある方法で出力する
+    // Ref: jubatus/server/framework/save_load.cpp
+    _InitJubatusVersion();
+
+    msgpack::sbuffer system_data_buf;
+    {
+        jubatus::core::framework::stream_writer<msgpack::sbuffer> st(system_data_buf);
+        jubatus::core::framework::jubatus_packer jp(st);
+        jubatus::core::framework::packer packer(jp);
+        packer.pack_array(5);
+        packer.pack_uint64(system_data_container_version);
+        packer.pack_uint64(std::time(NULL));
+        packer.pack(type_);
+        packer.pack(id_);
+        packer.pack(config_);
+    }
+
+    char header_buf[48];
+    std::memcpy(header_buf, magic_number, 8);
+    write_big_endian(format_version, &header_buf[8]);
+    write_big_endian(jubatus_version_major, &header_buf[16]);
+    write_big_endian(jubatus_version_minor, &header_buf[20]);
+    write_big_endian(jubatus_version_maintenance, &header_buf[24]);
+    // write_big_endian(crc32, &header_buf[28]);  // skipped
+    write_big_endian(static_cast<uint64_t>(system_data_buf.size()),
+                     &header_buf[32]);
+    write_big_endian(static_cast<uint64_t>(user_data_buf.size()),
+                     &header_buf[40]);
+
+    uint32_t crc32 = jubatus::server::common::calc_crc32(header_buf, 28);
+    crc32 = jubatus::server::common::calc_crc32(&header_buf[32], 16, crc32);
+    crc32 = jubatus::server::common::calc_crc32(system_data_buf.data(), system_data_buf.size(), crc32);
+    crc32 = jubatus::server::common::calc_crc32(user_data_buf.data(), user_data_buf.size(), crc32);
+    write_big_endian(crc32, &header_buf[28]);
+
+    size_t ret_size = sizeof(header_buf) + system_data_buf.size() + user_data_buf.size();
+    char *temp = new char[ret_size];
+    char *p = temp;
+    std::memcpy(p, header_buf, sizeof(header_buf));
+    p += sizeof(header_buf);
+    std::memcpy(p, system_data_buf.data(), system_data_buf.size());
+    p += system_data_buf.size();
+    std::memcpy(p, user_data_buf.data(), user_data_buf.size());
+    p += user_data_buf.size();
+#ifdef IS_PY3
+    PyObject *ret = PyBytes_FromStringAndSize(temp, ret_size);
+#else
+    PyObject *ret = PyString_FromStringAndSize(temp, ret_size);
+#endif
+    delete[] temp;
+    return ret;
+}
+
+int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
+                    std::string& model_type, std::string& model_id, std::string& model_config,
+                    uint64_t *user_data_version, msgpack::object **user_data)
+{
+    Py_buffer view;
+    PyObject *bytes_obj = NULL;
+    int ret = 0;
+
+    if (PyObject_GetBuffer(arg, &view, PyBUF_SIMPLE) != 0) {
+        PyObject *read_attr = PyObject_GetAttrString(arg, "read");
+        if (!read_attr)
+            return 0;
+        bytes_obj = PyObject_CallObject(read_attr, NULL);
+        Py_DECREF(read_attr);
+        if (PyObject_GetBuffer(bytes_obj, &view, PyBUF_SIMPLE) != 0) {
+            Py_DECREF(bytes_obj);
+            return 0;
+        }
+    }
+
+    _InitJubatusVersion();
+    do {
+        char *p = (char*)view.buf;
+        char *sys = &p[48];
+        if (std::memcmp(p, magic_number, 8) != 0)
+            break;
+        if (read_big_endian<uint64_t>(&p[8]) != format_version)
+            break;
+        uint32_t jubatus_major_read = read_big_endian<uint32_t>(&p[16]);
+        uint32_t jubatus_minor_read = read_big_endian<uint32_t>(&p[20]);
+        uint32_t jubatus_maintenance_read = read_big_endian<uint32_t>(&p[24]);
+        if (jubatus_major_read != jubatus_version_major
+            || jubatus_minor_read != jubatus_version_minor
+            || jubatus_maintenance_read != jubatus_version_maintenance)
+            break;
+        uint32_t crc32_expected = read_big_endian<uint32_t>(&p[28]);
+        uint64_t system_data_size = read_big_endian<uint64_t>(&p[32]);
+        uint64_t user_data_size = read_big_endian<uint64_t>(&p[40]);
+        if (48 + system_data_size + user_data_size != view.len)
+            break;
+        char *user = &sys[system_data_size];
+        uint32_t crc32_actual = jubatus::server::common::calc_crc32(p, 28);
+        crc32_actual = jubatus::server::common::calc_crc32(&p[32], 16, crc32_actual);
+        crc32_actual = jubatus::server::common::calc_crc32(sys, system_data_size, crc32_actual);
+        crc32_actual = jubatus::server::common::calc_crc32(user, user_data_size, crc32_actual);
+        if (crc32_actual != crc32_expected)
+            break;
+
+        {
+            msgpack::unpacked unpacked;
+            msgpack::unpack(&unpacked, sys, system_data_size);
+            if (unpacked.get().type != msgpack::type::ARRAY)
+                break;
+            msgpack::object_array& sc = unpacked.get().via.array;
+            if (sc.size != 5 || sc.ptr[0].via.u64 != system_data_container_version
+                || sc.ptr[2].type != msgpack::type::RAW
+                || sc.ptr[3].type != msgpack::type::RAW
+                || sc.ptr[4].type != msgpack::type::RAW)
+                break;
+            model_type.assign(sc.ptr[2].via.raw.ptr, sc.ptr[2].via.raw.size);
+            model_id.assign(sc.ptr[3].via.raw.ptr, sc.ptr[3].via.raw.size);
+            model_config.assign(sc.ptr[4].via.raw.ptr, sc.ptr[4].via.raw.size);
+        }
+
+        {
+            msgpack::unpack(&user_data_buffer, user, user_data_size);
+            if (user_data_buffer.get().type != msgpack::type::ARRAY)
+                break;
+            msgpack::object_array& sc = user_data_buffer.get().via.array;
+            if (sc.size != 2 || sc.ptr[0].type != msgpack::type::POSITIVE_INTEGER)
+                break;
+            *user_data_version = sc.ptr[0].via.u64;
+            *user_data = &sc.ptr[1];
+        }
+
+        ret = 1;
+    } while (0);
+
+    if (bytes_obj)
+        Py_DECREF(bytes_obj);
+    return ret;
 }

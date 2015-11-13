@@ -1,8 +1,10 @@
 #include <Python.h>
 #include <jubatus/core/common/jsonconfig.hpp>
+#include <jubatus/core/framework/stream_writer.hpp>
 #include <jubatus/core/fv_converter/datum_to_fv_converter.hpp>
 #include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/classifier/classifier_factory.hpp>
+#include <jubatus/core/driver/classifier.hpp>
 #include "lib.hpp"
 
 #ifdef IS_PY3
@@ -10,6 +12,8 @@ static PyTypeObject *EstimateResultType = NULL;
 #else
 static PyClassObject *EstimateResultType = NULL;
 #endif
+
+static const std::string TYPE("classifier");
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -30,9 +34,11 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
     jubatus::core::fv_converter::converter_config converter_conf;
     jubatus::util::text::json::from_json(config_json["converter"], converter_conf);
     jubatus::core::common::jsonconfig::config param(config_json["parameter"]);
-    self->handle = jubatus::core::classifier::classifier_factory::create_classifier
-        (method_value->get(), param, jubatus::core::storage::storage_factory::create_storage("local"));
-    self->converter = jubatus::core::fv_converter::make_fv_converter(converter_conf, NULL);
+    self->handle = jubatus::util::lang::shared_ptr<jubatus::core::driver::classifier>
+        (new jubatus::core::driver::classifier(jubatus::core::classifier::classifier_factory::create_classifier
+                                               (method_value->get(), param, jubatus::core::storage::storage_factory::create_storage("local")),
+                                               jubatus::core::fv_converter::make_fv_converter(converter_conf, NULL)));
+    self->config = jubatus::util::lang::shared_ptr<std::string>(new std::string(str_config_json));
 
     if (!EstimateResultType) {
         PyObject *m = PyImport_ImportModule("jubatus.classifier.types");
@@ -51,17 +57,15 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 void ClassifierDealloc(ClassifierObject *self)
 {
     self->handle.reset();
-    self->converter.reset();
+    self->config.reset();
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
 
-PyObject *ClassifierTrain(ClassifierObject *self, PyObject *args)
+PyObject *ClassifierTrain(ClassifierObject *self, PyObject *list)
 {
-    PyObject *list;
     std::string str;
     jubatus::core::fv_converter::datum d;
-    jubatus::core::common::sfv_t fv;
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &list))
+    if (!PyList_Check(list))
         return NULL;
     for (Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
         PyObject *labeled_datum = PyList_GetItem(list, i);
@@ -77,19 +81,15 @@ PyObject *ClassifierTrain(ClassifierObject *self, PyObject *args)
             return NULL;
 
         PyDatumToNativeDatum(datum, d);
-        self->converter->convert(d, fv);
-        self->handle->train(fv, str);
+        self->handle->train(str, d);
     }
     Py_RETURN_NONE;
 }
 
-PyObject *ClassifierClassify(ClassifierObject *self, PyObject *args)
+PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
 {
-    PyObject *list;
     jubatus::core::fv_converter::datum d;
-    jubatus::core::common::sfv_t fv;
-    jubatus::core::classifier::classify_result ret;
-    if (!PyArg_ParseTuple(args, "O!", &PyList_Type, &list))
+    if (!PyList_Check(list))
         return NULL;
     PyObject *out = PyList_New(PyList_Size(list));
     for (Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
@@ -98,8 +98,7 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *args)
             Py_DECREF(out);
             return NULL;
         }
-        self->converter->convert(d, fv);
-        self->handle->classify_with_scores(fv, ret);
+        jubatus::core::classifier::classify_result ret = self->handle->classify(d);
         PyObject *tmp = PyList_New(ret.size());
         for (int j = 0; j < ret.size(); ++j) {
             PyObject *args = PyTuple_New(2);
@@ -116,4 +115,72 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *args)
         PyList_SetItem(out, i, tmp);
     }
     return out;
+}
+
+PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*)
+{
+    std::vector<std::string> labels = self->handle->get_labels();
+    PyObject *ret = PyList_New(labels.size());
+    for (int i = 0; i < labels.size(); ++i) {
+        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8(labels[i].c_str(), labels[i].size(), NULL));
+    }
+    return ret;
+}
+
+PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args)
+{
+    std::string label;
+    if (!PyUnicodeToUTF8(args, label))
+        return NULL;
+    self->handle->set_label(label);
+    Py_RETURN_NONE;
+}
+
+PyObject *ClassifierDeleteLabel(ClassifierObject *self, PyObject *args)
+{
+    std::string label;
+    if (!PyUnicodeToUTF8(args, label))
+        return NULL;
+    self->handle->delete_label(label);
+    Py_RETURN_NONE;
+}
+
+PyObject *ClassifierDump(ClassifierObject *self, PyObject *args)
+{
+    static const std::string ID("");
+    msgpack::sbuffer user_data_buf;
+    {
+        jubatus::core::framework::stream_writer<msgpack::sbuffer> st(user_data_buf);
+        jubatus::core::framework::jubatus_packer jp(st);
+        jubatus::core::framework::packer packer(jp);
+        packer.pack_array(2);
+        packer.pack((uint64_t)1); // Ref: jubatus/server/server/classifier_serv.cpp get_user_data_version
+        self->handle->pack(packer);
+    }
+    return SerializeModel(TYPE, *self->config, ID, user_data_buf);
+}
+
+PyObject *ClassifierLoad(ClassifierObject *self, PyObject *args)
+{
+    msgpack::unpacked unpacked;
+    uint64_t user_data_version;
+    msgpack::object *user_data;
+    std::string model_type, model_id, model_config;
+    if (!LoadModelHelper(args, unpacked, model_type, model_id, model_config, &user_data_version, &user_data))
+        return NULL;
+    if (model_type != TYPE || *(self->config) != model_config)
+        return NULL;
+    self->handle->unpack(*user_data);
+    Py_RETURN_NONE;
+}
+
+PyObject *ClassifierClear(ClassifierObject *self, PyObject *args)
+{
+    self->handle->clear();
+    Py_RETURN_NONE;
+}
+
+PyObject *ClassifierGetConfig(ClassifierObject *self, PyObject *args)
+{
+    return PyUnicode_DecodeUTF8(self->config->c_str(), self->config->size(), NULL);
 }

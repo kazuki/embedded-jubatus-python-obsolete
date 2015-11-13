@@ -5,6 +5,7 @@
 #include <jubatus/core/fv_converter/converter_config.hpp>
 #include <jubatus/core/fv_converter/datum.hpp>
 #include <jubatus/core/classifier/classifier_base.hpp>
+#include <jubatus/core/driver/classifier.hpp>
 
 #if PY_MAJOR_VERSION >= 3
 #define IS_PY3
@@ -12,8 +13,8 @@
 
 typedef struct {
     PyObject_HEAD;
-    jubatus::util::lang::shared_ptr<jubatus::core::classifier::classifier_base> handle;
-    jubatus::util::lang::shared_ptr<jubatus::core::fv_converter::datum_to_fv_converter> converter;
+    jubatus::util::lang::shared_ptr<jubatus::core::driver::classifier> handle;
+    jubatus::util::lang::shared_ptr<std::string> config;
 } ClassifierObject;
 
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
@@ -22,14 +23,34 @@ int PyNumberToDouble(PyObject *py_num, double &out);
 int PyDatumToNativeDatum(PyObject *py_datum, jubatus::core::fv_converter::datum &datum);
 int PyDictToJson(PyObject *py_dict, std::string &out);
 
+PyObject* SerializeModel(const std::string& type_, const std::string& config_, const std::string& id_,
+                         const msgpack::sbuffer& user_data_buf);
+int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
+                    std::string& model_type, std::string& model_id, std::string& model_config,
+                    uint64_t *user_data_version, msgpack::object **user_data);
+
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs);
 void ClassifierDealloc(ClassifierObject *self);
 PyObject *ClassifierTrain(ClassifierObject *self, PyObject *args);
 PyObject *ClassifierClassify(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*);
+PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierDeleteLabel(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierDump(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierLoad(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierClear(ClassifierObject *self, PyObject *args);
+PyObject *ClassifierGetConfig(ClassifierObject *self, PyObject *args);
 
 static PyMethodDef ClassifierMethods[] = {
-    {"train", (PyCFunction)ClassifierTrain, METH_VARARGS, ""},
-    {"classify", (PyCFunction)ClassifierClassify, METH_VARARGS, ""},
+    {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
+    {"classify", (PyCFunction)ClassifierClassify, METH_O, ""},
+    {"get_labels", (PyCFunction)ClassifierGetLabels, METH_NOARGS, ""},
+    {"set_label", (PyCFunction)ClassifierSetLabel, METH_O, ""},
+    {"delete_label", (PyCFunction)ClassifierDeleteLabel, METH_O, ""},
+    {"dump", (PyCFunction)ClassifierDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)ClassifierLoad, METH_O, ""},
+    {"clear", (PyCFunction)ClassifierClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)ClassifierGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
