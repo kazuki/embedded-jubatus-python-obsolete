@@ -10,7 +10,7 @@ ANOMALY_CONFIG = {
         'reverse_nearest_neighbor_num': 5,
         'method': 'lsh',
         'parameter': {
-            'hash_num': 512
+            'hash_num': 512,
         }
     },
     'converter': {
@@ -42,3 +42,8 @@ def test_anomaly_invalid_args():
 
 def test_anomaly():
     x = Anomaly(ANOMALY_CONFIG);
+    assert x.add(Datum({'x': 0.1})).score == float('inf')  # 1発目はinf
+    # 取り敢えずメソッドを呼び出してもエラーにならないことだけを確認
+    x.add(Datum({'x': 0.101}))
+    x.add(Datum({'x': 0.1001}))
+    x.calc_score(Datum({'x': 0.1001}))

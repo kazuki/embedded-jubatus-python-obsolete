@@ -30,6 +30,7 @@ typedef struct {
     PyObject_HEAD;
     shared_ptr<jubadriver::anomaly> handle;
     shared_ptr<std::string> config;
+    uint64_t idgen;
 } AnomalyObject;
 
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
@@ -58,6 +59,8 @@ PyObject *ClassifierGetConfig(ClassifierObject *self, PyObject *args);
 
 int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs);
 void AnomalyDealloc(AnomalyObject *self);
+PyObject *AnomalyAdd(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args);
 
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
@@ -73,6 +76,8 @@ static PyMethodDef ClassifierMethods[] = {
 };
 
 static PyMethodDef AnomalyMethods[] = {
+    {"add", (PyCFunction)AnomalyAdd, METH_O, ""},
+    {"calc_score", (PyCFunction)AnomalyCalcScore, METH_O, ""},
     {NULL}
 };
 
