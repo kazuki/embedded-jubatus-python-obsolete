@@ -12,6 +12,8 @@
 using jubatus::core::common::write_big_endian;
 using jubatus::core::common::read_big_endian;
 
+using jubatus::server::common::calc_crc32;
+
 /*
  * Pythonの文字列型(Unicode, Py2のみString)を，UTF8で符号化されたstd::stringに変換する
  */
@@ -67,7 +69,7 @@ int PyNumberToDouble(PyObject *py_num, double &out)
 }
 
 // jubatus.common.Datum(Python) => jubatus::core::fv_converter::datum(C++)
-int PyDatumToNativeDatum(PyObject *py_datum, jubatus::core::fv_converter::datum &datum)
+int PyDatumToNativeDatum(PyObject *py_datum, jubafvconv::datum &datum)
 {
     static const char *FIELD_NAMES[] = {
         "string_values", "num_values", "binary_values"
@@ -168,9 +170,9 @@ PyObject* SerializeModel(const std::string& type_, const std::string& config_, c
 
     msgpack::sbuffer system_data_buf;
     {
-        jubatus::core::framework::stream_writer<msgpack::sbuffer> st(system_data_buf);
-        jubatus::core::framework::jubatus_packer jp(st);
-        jubatus::core::framework::packer packer(jp);
+        jubaframework::stream_writer<msgpack::sbuffer> st(system_data_buf);
+        jubaframework::jubatus_packer jp(st);
+        jubaframework::packer packer(jp);
         packer.pack_array(5);
         packer.pack_uint64(system_data_container_version);
         packer.pack_uint64(std::time(NULL));
@@ -191,10 +193,10 @@ PyObject* SerializeModel(const std::string& type_, const std::string& config_, c
     write_big_endian(static_cast<uint64_t>(user_data_buf.size()),
                      &header_buf[40]);
 
-    uint32_t crc32 = jubatus::server::common::calc_crc32(header_buf, 28);
-    crc32 = jubatus::server::common::calc_crc32(&header_buf[32], 16, crc32);
-    crc32 = jubatus::server::common::calc_crc32(system_data_buf.data(), system_data_buf.size(), crc32);
-    crc32 = jubatus::server::common::calc_crc32(user_data_buf.data(), user_data_buf.size(), crc32);
+    uint32_t crc32 = calc_crc32(header_buf, 28);
+    crc32 = calc_crc32(&header_buf[32], 16, crc32);
+    crc32 = calc_crc32(system_data_buf.data(), system_data_buf.size(), crc32);
+    crc32 = calc_crc32(user_data_buf.data(), user_data_buf.size(), crc32);
     write_big_endian(crc32, &header_buf[28]);
 
     size_t ret_size = sizeof(header_buf) + system_data_buf.size() + user_data_buf.size();
@@ -256,10 +258,10 @@ int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
         if (48 + system_data_size + user_data_size != view.len)
             break;
         char *user = &sys[system_data_size];
-        uint32_t crc32_actual = jubatus::server::common::calc_crc32(p, 28);
-        crc32_actual = jubatus::server::common::calc_crc32(&p[32], 16, crc32_actual);
-        crc32_actual = jubatus::server::common::calc_crc32(sys, system_data_size, crc32_actual);
-        crc32_actual = jubatus::server::common::calc_crc32(user, user_data_size, crc32_actual);
+        uint32_t crc32_actual = calc_crc32(p, 28);
+        crc32_actual = calc_crc32(&p[32], 16, crc32_actual);
+        crc32_actual = calc_crc32(sys, system_data_size, crc32_actual);
+        crc32_actual = calc_crc32(user, user_data_size, crc32_actual);
         if (crc32_actual != crc32_expected)
             break;
 

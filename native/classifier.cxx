@@ -19,26 +19,34 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *py_config_obj;
     if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &py_config_obj))
-        return 0;
+        return -1;
     std::string str_config_json;
     if (!PyDictToJson(py_config_obj, str_config_json))
-        return 0;
+        return -1;
 
-    jubatus::util::text::json::json config_json =
-        jubatus::util::lang::lexical_cast<jubatus::util::text::json::json>(str_config_json);
-    jubatus::util::text::json::json_string *method_value =
-        (jubatus::util::text::json::json_string*)config_json["method"].get();
-    if (!method_value || method_value->type() != jubatus::util::text::json::json::String)
-        return 0;
+    auto config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
+    auto method_value = (jubajson::json_string*)config_json["method"].get();
+    if (!method_value || method_value->type() != jubajson::json::String) {
+        PyErr_SetString(PyExc_TypeError, "invalid config");
+        return -1;
+    }
 
-    jubatus::core::fv_converter::converter_config converter_conf;
-    jubatus::util::text::json::from_json(config_json["converter"], converter_conf);
-    jubatus::core::common::jsonconfig::config param(config_json["parameter"]);
-    self->handle = jubatus::util::lang::shared_ptr<jubatus::core::driver::classifier>
-        (new jubatus::core::driver::classifier(jubatus::core::classifier::classifier_factory::create_classifier
-                                               (method_value->get(), param, jubatus::core::storage::storage_factory::create_storage("local")),
-                                               jubatus::core::fv_converter::make_fv_converter(converter_conf, NULL)));
-    self->config = jubatus::util::lang::shared_ptr<std::string>(new std::string(str_config_json));
+    try {
+        jubafvconv::converter_config converter_conf;
+        jubajson::from_json(config_json["converter"], converter_conf);
+        jubacomm::jsonconfig::config param(config_json["parameter"]);
+        self->handle = shared_ptr<jubadriver::classifier>
+            (new jubadriver::classifier(jubacore::classifier::classifier_factory::create_classifier
+                                        (method_value->get(), param, jubacore::storage::storage_factory::create_storage("local")),
+                                        jubafvconv::make_fv_converter(converter_conf, NULL)));
+        self->config = shared_ptr<std::string>(new std::string(str_config_json));
+    } catch (std::exception &e) {
+        PyErr_SetString(PyExc_TypeError, e.what());
+        return -1;
+    } catch (...) {
+        PyErr_SetString(PyExc_TypeError, "invalid config");
+        return -1;
+    }
 
     if (!EstimateResultType) {
         PyObject *m = PyImport_ImportModule("jubatus.classifier.types");
@@ -64,7 +72,7 @@ void ClassifierDealloc(ClassifierObject *self)
 PyObject *ClassifierTrain(ClassifierObject *self, PyObject *list)
 {
     std::string str;
-    jubatus::core::fv_converter::datum d;
+    jubafvconv::datum d;
     if (!PyList_Check(list))
         return NULL;
     for (Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
@@ -88,7 +96,7 @@ PyObject *ClassifierTrain(ClassifierObject *self, PyObject *list)
 
 PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
 {
-    jubatus::core::fv_converter::datum d;
+    jubafvconv::datum d;
     if (!PyList_Check(list))
         return NULL;
     PyObject *out = PyList_New(PyList_Size(list));
@@ -98,7 +106,7 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
             Py_DECREF(out);
             return NULL;
         }
-        jubatus::core::classifier::classify_result ret = self->handle->classify(d);
+        jubacore::classifier::classify_result ret = self->handle->classify(d);
         PyObject *tmp = PyList_New(ret.size());
         for (int j = 0; j < ret.size(); ++j) {
             PyObject *args = PyTuple_New(2);
@@ -150,9 +158,9 @@ PyObject *ClassifierDump(ClassifierObject *self, PyObject *args)
     static const std::string ID("");
     msgpack::sbuffer user_data_buf;
     {
-        jubatus::core::framework::stream_writer<msgpack::sbuffer> st(user_data_buf);
-        jubatus::core::framework::jubatus_packer jp(st);
-        jubatus::core::framework::packer packer(jp);
+        jubaframework::stream_writer<msgpack::sbuffer> st(user_data_buf);
+        jubaframework::jubatus_packer jp(st);
+        jubaframework::packer packer(jp);
         packer.pack_array(2);
         packer.pack((uint64_t)1); // Ref: jubatus/server/server/classifier_serv.cpp get_user_data_version
         self->handle->pack(packer);

@@ -53,7 +53,7 @@ initembedded(void)
     for (int i = 0; _EmbeddedTypes[i]; ++i) {
         Py_INCREF(_EmbeddedTypes[i]);
         PyModule_AddObject(m,
-                           _EmbeddedTypes[i]->tp_name + 7,
+                           _EmbeddedTypes[i]->tp_name,
                            (PyObject*)_EmbeddedTypes[i]);
     }
     return MODINIT_RETURN_WRAP(m);

@@ -1,4 +1,5 @@
 from io import BytesIO
+from nose.tools import assert_raises
 from jubatus.embedded import Classifier
 from jubatus.common import Datum
 
@@ -20,6 +21,17 @@ CLASSIFIER_CONFIG = {
     },
     "parameter": {}
 }
+
+def test_classifier_invalid_args():
+    assert_raises(Exception, Classifier)
+    assert_raises(Exception, Classifier, 'hoge')
+    assert_raises(Exception, Classifier, {})
+    assert_raises(Exception, Classifier, {'method': 'hoge'})
+    assert_raises(Exception, Classifier, {'method': 'hoge', 'converter': {}})
+
+    invalid_config = dict(CLASSIFIER_CONFIG)
+    invalid_config['method'] = 'hoge'
+    assert_raises(Exception, Classifier, invalid_config)
 
 def test_classifier_num():
     x = Classifier(CLASSIFIER_CONFIG);
