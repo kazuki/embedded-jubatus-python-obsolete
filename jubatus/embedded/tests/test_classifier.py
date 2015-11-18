@@ -1,4 +1,3 @@
-from io import BytesIO
 from nose.tools import assert_raises
 from jubatus.embedded import Classifier
 from jubatus.common import Datum

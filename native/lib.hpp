@@ -6,6 +6,7 @@
 #include <jubatus/core/fv_converter/datum.hpp>
 #include <jubatus/core/driver/anomaly.hpp>
 #include <jubatus/core/driver/classifier.hpp>
+#include <jubatus/core/driver/recommender.hpp>
 #include <jubatus/util/text/json.h>
 
 #if PY_MAJOR_VERSION >= 3
@@ -32,6 +33,11 @@ typedef struct {
     shared_ptr<std::string> config;
     uint64_t idgen;
 } AnomalyObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::recommender> handle;
+    shared_ptr<std::string> config;
+} RecommenderObject;
 
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
 int PyBytesToNative(PyObject *py_bin, std::string &out);
@@ -62,6 +68,9 @@ void AnomalyDealloc(AnomalyObject *self);
 PyObject *AnomalyAdd(AnomalyObject *self, PyObject *args);
 PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args);
 
+int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs);
+void RecommenderDealloc(RecommenderObject *self);
+
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
     {"classify", (PyCFunction)ClassifierClassify, METH_O, ""},
@@ -78,6 +87,10 @@ static PyMethodDef ClassifierMethods[] = {
 static PyMethodDef AnomalyMethods[] = {
     {"add", (PyCFunction)AnomalyAdd, METH_O, ""},
     {"calc_score", (PyCFunction)AnomalyCalcScore, METH_O, ""},
+    {NULL}
+};
+
+static PyMethodDef RecommenderMethods[] = {
     {NULL}
 };
 
@@ -161,9 +174,50 @@ static PyTypeObject AnomalyObjectType = {
     0,                         /* tp_alloc */
     0,                         /* tp_new */
 };
+static PyTypeObject RecommenderObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Recommender",                 /* tp_name */
+    sizeof(RecommenderObjectType), /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)RecommenderDealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Recommender",             /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    RecommenderMethods,        /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)RecommenderInit, /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
 static PyTypeObject *_EmbeddedTypes[] = {
     &ClassifierObjectType,
     &AnomalyObjectType,
+    &RecommenderObjectType,
     NULL
 };
 

@@ -3,8 +3,8 @@
 #include <jubatus/core/framework/stream_writer.hpp>
 #include <jubatus/core/fv_converter/datum_to_fv_converter.hpp>
 #include <jubatus/core/storage/storage_factory.hpp>
-#include <jubatus/core/anomaly/anomaly_factory.hpp>
-#include <jubatus/core/driver/anomaly.hpp>
+#include <jubatus/core/recommender/recommender_factory.hpp>
+#include <jubatus/core/driver/recommender.hpp>
 #include "lib.hpp"
 
 #ifdef IS_PY3
@@ -13,7 +13,7 @@ static PyTypeObject *IdWithScoreType = NULL;
 static PyClassObject *IdWithScoreType = NULL;
 #endif
 
-int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
+int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
 {
     PyObject *py_config_obj;
     if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &py_config_obj))
@@ -35,12 +35,11 @@ int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
         jubacomm::jsonconfig::config param(config_json["parameter"]);
         std::string my_id;
         self->handle.reset(
-            new jubadriver::anomaly(
-                jubacore::anomaly::anomaly_factory::create_anomaly(
+            new jubadriver::recommender(
+                jubacore::recommender::recommender_factory::create_recommender(
                     method_value->get(), param, my_id),
                jubafvconv::make_fv_converter(converter_conf, NULL)));
         self->config.reset(new std::string(str_config_json));
-        self->idgen = 0;
     } catch (std::exception &e) {
         PyErr_SetString(PyExc_TypeError, e.what());
         return -1;
@@ -50,7 +49,7 @@ int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
     }
 
     if (!IdWithScoreType) {
-        PyObject *m = PyImport_ImportModule("jubatus.anomaly.types");
+        PyObject *m = PyImport_ImportModule("jubatus.recommender.types");
         if (m) {
 #ifdef IS_PY3
             IdWithScoreType = (PyTypeObject*)PyObject_GetAttrString(m, "IdWithScore");
@@ -60,40 +59,12 @@ int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
             Py_DECREF(m);
         }
     }
-
     return 0;
 }
 
-void AnomalyDealloc(AnomalyObject *self)
+void RecommenderDealloc(RecommenderObject *self)
 {
     self->handle.reset();
     self->config.reset();
     Py_TYPE(self)->tp_free((PyObject*)self);
-}
-
-PyObject *AnomalyAdd(AnomalyObject *self, PyObject *py_datum)
-{
-    jubafvconv::datum datum;
-    if (!PyDatumToNativeDatum(py_datum, datum))
-        return NULL;
-    std::string id_str = jubalang::lexical_cast<std::string>(self->idgen++);
-    auto ret = self->handle->add(id_str, datum);
-    PyObject *args = PyTuple_New(2);
-    PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret.first.c_str(), ret.first.size(), NULL));
-    PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret.second));
-#ifdef IS_PY3
-    PyObject *id_with_score = IdWithScoreType->tp_new(IdWithScoreType, args, NULL);
-    IdWithScoreType->tp_init(id_with_score, args, NULL);
-#else
-    PyObject *id_with_score = PyInstance_New((PyObject*)IdWithScoreType, args, NULL);
-#endif
-    return id_with_score;
-}
-
-PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args)
-{
-    jubafvconv::datum datum;
-    if (!PyDatumToNativeDatum(args, datum))
-        return NULL;
-    return PyFloat_FromDouble(self->handle->calc_score(datum));
 }

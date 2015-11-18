@@ -16,6 +16,7 @@ setup(
                 'native/helper.cxx',
                 'native/anomaly.cxx',
                 'native/classifier.cxx',
+                'native/recommender.cxx',
             ],
             include_dirs=['native'],
             libraries=['jubatus_core', 'jubaserv_common'],

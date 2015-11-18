@@ -35,11 +35,13 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
         jubafvconv::converter_config converter_conf;
         jubajson::from_json(config_json["converter"], converter_conf);
         jubacomm::jsonconfig::config param(config_json["parameter"]);
-        self->handle = shared_ptr<jubadriver::classifier>
-            (new jubadriver::classifier(jubacore::classifier::classifier_factory::create_classifier
-                                        (method_value->get(), param, jubacore::storage::storage_factory::create_storage("local")),
-                                        jubafvconv::make_fv_converter(converter_conf, NULL)));
-        self->config = shared_ptr<std::string>(new std::string(str_config_json));
+        self->handle.reset(
+            new jubadriver::classifier(
+                jubacore::classifier::classifier_factory::create_classifier(
+                    method_value->get(), param,
+                    jubacore::storage::storage_factory::create_storage("local")),
+                jubafvconv::make_fv_converter(converter_conf, NULL)));
+        self->config.reset(new std::string(str_config_json));
     } catch (std::exception &e) {
         PyErr_SetString(PyExc_TypeError, e.what());
         return -1;
