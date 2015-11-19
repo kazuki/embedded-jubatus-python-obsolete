@@ -121,9 +121,15 @@ PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
     if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_size))
         return NULL;
 
+#ifdef IS_PY3
     if (!PyLong_Check(py_size))
         return NULL;
     long size = PyLong_AsLong(py_size);
+#else
+    if (!PyLong_Check(py_size) && !PyInt_Check(py_size))
+        return NULL;
+    long size = (PyInt_Check(py_size) ? PyInt_AsLong(py_size) : PyLong_AsLong(py_size));
+#endif
     std::string id;
     if (!PyUnicodeToUTF8(py_id, id))
         return NULL;
@@ -152,9 +158,15 @@ PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args
     if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum, &py_size))
         return NULL;
 
+#ifdef IS_PY3
     if (!PyLong_Check(py_size))
         return NULL;
     long size = PyLong_AsLong(py_size);
+#else
+    if (!PyLong_Check(py_size) && !PyInt_Check(py_size))
+        return NULL;
+    long size = (PyInt_Check(py_size) ? PyInt_AsLong(py_size) : PyLong_AsLong(py_size));
+#endif
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(py_datum, datum))
         return NULL;
