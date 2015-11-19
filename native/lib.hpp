@@ -44,6 +44,7 @@ int PyBytesToNative(PyObject *py_bin, std::string &out);
 int PyNumberToDouble(PyObject *py_num, double &out);
 int PyDatumToNativeDatum(PyObject *py_datum, jubafvconv::datum &datum);
 int PyDictToJson(PyObject *py_dict, std::string &out);
+PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum);
 
 PyObject* SerializeModel(const std::string& type_, const std::string& config_, const std::string& id_,
                          const msgpack::sbuffer& user_data_buf);
@@ -70,6 +71,16 @@ PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args);
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs);
 void RecommenderDealloc(RecommenderObject *self);
+PyObject *RecommenderClearRow(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderUpdateRow(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderCompleteRowFromId(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderCompleteRowFromDatum(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args);
 
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
@@ -91,6 +102,16 @@ static PyMethodDef AnomalyMethods[] = {
 };
 
 static PyMethodDef RecommenderMethods[] = {
+    {"clear_row", (PyCFunction)RecommenderClearRow, METH_O, ""},
+    {"update_row", (PyCFunction)RecommenderUpdateRow, METH_VARARGS, ""},
+    {"complete_row_from_id", (PyCFunction)RecommenderCompleteRowFromId, METH_O, ""},
+    {"complete_row_from_datum", (PyCFunction)RecommenderCompleteRowFromDatum, METH_O, ""},
+    {"similar_row_from_id", (PyCFunction)RecommenderSimilarRowFromId, METH_VARARGS, ""},
+    {"similar_row_from_datum", (PyCFunction)RecommenderSimilarRowFromDatum, METH_VARARGS, ""},
+    {"decode_row", (PyCFunction)RecommenderDecodeRow, METH_O, ""},
+    {"get_all_rows", (PyCFunction)RecommenderGetAllRows, METH_NOARGS, ""},
+    {"calc_similarity", (PyCFunction)RecommenderCalcSimilarity, METH_VARARGS, ""},
+    {"calc_l2norm", (PyCFunction)RecommenderCalcL2Norm, METH_O, ""},
     {NULL}
 };
 

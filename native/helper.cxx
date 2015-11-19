@@ -141,6 +141,63 @@ int PyDictToJson(PyObject *py_dict, std::string &out)
     return ret_code;
 }
 
+PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum)
+{
+#ifdef IS_PY3
+    static PyTypeObject *DatumType = NULL;
+#else
+    static PyClassObject *DatumType = NULL;
+#endif
+    if (!DatumType) {
+        PyObject *m = PyImport_ImportModule("jubatus.common");
+        if (m) {
+#ifdef IS_PY3
+            DatumType = (PyTypeObject*)PyObject_GetAttrString(m, "Datum");
+#else
+            DatumType = (PyClassObject*)PyObject_GetAttrString(m, "Datum");
+#endif
+            Py_DECREF(m);
+        }
+    }
+
+    PyObject *dict = PyDict_New();
+    for (auto pair: datum.string_values_) {
+        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
+                                             pair.first.size(), NULL);
+        PyObject *val = PyUnicode_DecodeUTF8(pair.second.data(),
+                                             pair.second.size(), NULL);
+        PyDict_SetItem(dict, key, val);
+    }
+    for (auto pair: datum.num_values_) {
+        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
+                                             pair.first.size(), NULL);
+        PyObject *val = PyFloat_FromDouble(pair.second);
+        PyDict_SetItem(dict, key, val);
+    }
+    for (auto pair: datum.binary_values_) {
+        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
+                                             pair.first.size(), NULL);
+#ifdef IS_PY3
+        PyObject *val = PyBytes_FromStringAndSize(pair.second.data(),
+                                                  pair.second.size());
+#else
+        PyObject *val = PyString_FromStringAndSize(pair.second.data(),
+                                                   pair.second.size());
+#endif
+        PyDict_SetItem(dict, key, val);
+    }
+
+    PyObject *args = PyTuple_New(1);
+    PyTuple_SetItem(args, 0, dict);
+#ifdef IS_PY3
+    PyObject *py_datum = DatumType->tp_new(DatumType, args, NULL);
+    DatumType->tp_init(py_datum, args, NULL);
+#else
+    PyObject *py_datum = PyInstance_New((PyObject*)DatumType, args, NULL);
+#endif
+    return py_datum;
+}
+
 static const char magic_number[8] = "jubatus";
 static const uint64_t system_data_container_version = 1;
 static const uint64_t format_version = 1;

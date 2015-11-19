@@ -68,3 +68,153 @@ void RecommenderDealloc(RecommenderObject *self)
     self->config.reset();
     Py_TYPE(self)->tp_free((PyObject*)self);
 }
+
+PyObject *RecommenderClearRow(RecommenderObject *self, PyObject *args)
+{
+    std::string id;
+    if (!PyUnicodeToUTF8(args, id))
+        return NULL;
+    self->handle->clear_row(id);
+    Py_RETURN_TRUE;
+}
+
+PyObject *RecommenderUpdateRow(RecommenderObject *self, PyObject *args)
+{
+    PyObject *py_id;
+    PyObject *py_datum;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_datum))
+        return NULL;
+
+    std::string id;
+    jubafvconv::datum datum;
+    if (!PyUnicodeToUTF8(py_id, id))
+        return NULL;
+    if (!PyDatumToNativeDatum(py_datum, datum))
+        return NULL;
+
+    self->handle->update_row(id, datum);
+    Py_RETURN_TRUE;
+}
+
+PyObject *RecommenderCompleteRowFromId(RecommenderObject *self, PyObject *args)
+{
+    std::string id;
+    if (!PyUnicodeToUTF8(args, id))
+        return NULL;
+    jubafvconv::datum datum = self->handle->complete_row_from_id(id);
+    return NativeDatumToPyDatum(datum);
+}
+
+PyObject *RecommenderCompleteRowFromDatum(RecommenderObject *self, PyObject *args)
+{
+    jubafvconv::datum datum;
+    if (!PyDatumToNativeDatum(args, datum))
+        return NULL;
+    datum = self->handle->complete_row_from_datum(datum);
+    return NativeDatumToPyDatum(datum);
+}
+
+PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
+{
+    PyObject *py_id;
+    PyObject *py_size;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_size))
+        return NULL;
+
+    if (!PyLong_Check(py_size))
+        return NULL;
+    long size = PyLong_AsLong(py_size);
+    std::string id;
+    if (!PyUnicodeToUTF8(py_id, id))
+        return NULL;
+    auto ret = self->handle->similar_row_from_id(id, size);
+    PyObject *vec = PyList_New(ret.size());
+    for (int i = 0; i < ret.size(); ++i) {
+        PyObject *args = PyTuple_New(2);
+        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret[i].first.data(),
+                                                      ret[i].first.size(), NULL));
+        PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
+#ifdef IS_PY3
+        PyObject *item = IdWithScoreType->tp_new(IdWithScoreType, args, NULL);
+        IdWithScoreType->tp_init(item, args, NULL);
+#else
+        PyObject *item = PyInstance_New((PyObject*)IdWithScoreType, args, NULL);
+#endif
+        PyList_SetItem(vec, i, item);
+    }
+    return vec;
+}
+
+PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args)
+{
+    PyObject *py_datum;
+    PyObject *py_size;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum, &py_size))
+        return NULL;
+
+    if (!PyLong_Check(py_size))
+        return NULL;
+    long size = PyLong_AsLong(py_size);
+    jubafvconv::datum datum;
+    if (!PyDatumToNativeDatum(py_datum, datum))
+        return NULL;
+    auto ret = self->handle->similar_row_from_datum(datum, size);
+    PyObject *vec = PyList_New(ret.size());
+    for (int i = 0; i < ret.size(); ++i) {
+        PyObject *args = PyTuple_New(2);
+        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret[i].first.data(),
+                                                      ret[i].first.size(), NULL));
+        PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
+#ifdef IS_PY3
+        PyObject *item = IdWithScoreType->tp_new(IdWithScoreType, args, NULL);
+        IdWithScoreType->tp_init(item, args, NULL);
+#else
+        PyObject *item = PyInstance_New((PyObject*)IdWithScoreType, args, NULL);
+#endif
+        PyList_SetItem(vec, i, item);
+    }
+    return vec;
+}
+
+PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args)
+{
+    std::string id;
+    if (!PyUnicodeToUTF8(args, id))
+        return NULL;
+    return NativeDatumToPyDatum(self->handle->decode_row(id));
+}
+
+PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args)
+{
+    auto vec = self->handle->get_all_rows();
+    PyObject *ret = PyList_New(vec.size());
+    for (int i = 0; i < vec.size(); ++i) {
+        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8(vec[i].data(),
+                                                    vec[i].size(),
+                                                    NULL));
+    }
+    return ret;
+}
+
+PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args)
+{
+    PyObject *py_datum1;
+    PyObject *py_datum2;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum1, &py_datum2))
+        return NULL;
+
+    jubafvconv::datum datum1, datum2;
+    if (!PyDatumToNativeDatum(py_datum1, datum1))
+        return NULL;
+    if (!PyDatumToNativeDatum(py_datum2, datum2))
+        return NULL;
+    return PyFloat_FromDouble(self->handle->calc_similality(datum1, datum2));
+}
+
+PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args)
+{
+    jubafvconv::datum datum;
+    if (!PyDatumToNativeDatum(args, datum))
+        return NULL;
+    return PyFloat_FromDouble(self->handle->calc_l2norm(datum));
+}
