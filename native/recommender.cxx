@@ -11,39 +11,22 @@ static PyTypeObject *IdWithScoreType = NULL;
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
 {
-    PyObject *py_config_obj;
-    if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &py_config_obj))
+    std::string method;
+    jubafvconv::converter_config fvconv_config;
+    jubacomm::jsonconfig::config config;
+    if (!ParseInitArgs(self, args, method, fvconv_config, config))
         return -1;
-    std::string str_config_json;
-    if (!PyDictToJson(py_config_obj, str_config_json))
-        return -1;
-
-    jubajson::json config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
-    jubajson::json_string *method_value = (jubajson::json_string*)config_json["method"].get();
-    if (!method_value || method_value->type() != jubajson::json::String) {
-        PyErr_SetString(PyExc_TypeError, "invalid config");
-        return -1;
-    }
-
     try {
-        jubafvconv::converter_config converter_conf;
-        jubajson::from_json(config_json["converter"], converter_conf);
-        jubacomm::jsonconfig::config param(config_json["parameter"]);
         std::string my_id;
         self->handle.reset(
             new jubadriver::recommender(
                 jubacore::recommender::recommender_factory::create_recommender(
-                    method_value->get(), param, my_id),
-               jubafvconv::make_fv_converter(converter_conf, NULL)));
-        self->config.reset(new std::string(str_config_json));
+                    method, config, my_id),
+               jubafvconv::make_fv_converter(fvconv_config, NULL)));
     } catch (std::exception &e) {
         PyErr_SetString(PyExc_TypeError, e.what());
         return -1;
-    } catch (...) {
-        PyErr_SetString(PyExc_TypeError, "invalid config");
-        return -1;
     }
-
     if (!LookupTypeObject("jubatus.recommender.types", "IdWithScore", &IdWithScoreType))
         return -1;
     return 0;
