@@ -7,11 +7,7 @@
 #include <jubatus/core/driver/recommender.hpp>
 #include "lib.hpp"
 
-#ifdef IS_PY3
 static PyTypeObject *IdWithScoreType = NULL;
-#else
-static PyClassObject *IdWithScoreType = NULL;
-#endif
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -48,17 +44,8 @@ int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
 
-    if (!IdWithScoreType) {
-        PyObject *m = PyImport_ImportModule("jubatus.recommender.types");
-        if (m) {
-#ifdef IS_PY3
-            IdWithScoreType = (PyTypeObject*)PyObject_GetAttrString(m, "IdWithScore");
-#else
-            IdWithScoreType = (PyClassObject*)PyObject_GetAttrString(m, "IdWithScore");
-#endif
-            Py_DECREF(m);
-        }
-    }
+    if (!LookupTypeObject("jubatus.recommender.types", "IdWithScore", &IdWithScoreType))
+        return -1;
     return 0;
 }
 
@@ -121,15 +108,9 @@ PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
     if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_size))
         return NULL;
 
-#ifdef IS_PY3
-    if (!PyLong_Check(py_size))
+    long size;
+    if (!PyLongToNative(py_size, size))
         return NULL;
-    long size = PyLong_AsLong(py_size);
-#else
-    if (!PyLong_Check(py_size) && !PyInt_Check(py_size))
-        return NULL;
-    long size = (PyInt_Check(py_size) ? PyInt_AsLong(py_size) : PyLong_AsLong(py_size));
-#endif
     std::string id;
     if (!PyUnicodeToUTF8(py_id, id))
         return NULL;
@@ -137,16 +118,9 @@ PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
     PyObject *vec = PyList_New(ret.size());
     for (int i = 0; i < ret.size(); ++i) {
         PyObject *args = PyTuple_New(2);
-        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret[i].first.data(),
-                                                      ret[i].first.size(), NULL));
+        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[i].first));
         PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
-#ifdef IS_PY3
-        PyObject *item = IdWithScoreType->tp_new(IdWithScoreType, args, NULL);
-        IdWithScoreType->tp_init(item, args, NULL);
-#else
-        PyObject *item = PyInstance_New((PyObject*)IdWithScoreType, args, NULL);
-#endif
-        PyList_SetItem(vec, i, item);
+        PyList_SetItem(vec, i, CreateInstanceAndInit(IdWithScoreType, args, NULL));
     }
     return vec;
 }
@@ -158,15 +132,9 @@ PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args
     if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum, &py_size))
         return NULL;
 
-#ifdef IS_PY3
-    if (!PyLong_Check(py_size))
+    long size;
+    if (!PyLongToNative(py_size, size))
         return NULL;
-    long size = PyLong_AsLong(py_size);
-#else
-    if (!PyLong_Check(py_size) && !PyInt_Check(py_size))
-        return NULL;
-    long size = (PyInt_Check(py_size) ? PyInt_AsLong(py_size) : PyLong_AsLong(py_size));
-#endif
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(py_datum, datum))
         return NULL;
@@ -174,16 +142,9 @@ PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args
     PyObject *vec = PyList_New(ret.size());
     for (int i = 0; i < ret.size(); ++i) {
         PyObject *args = PyTuple_New(2);
-        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret[i].first.data(),
-                                                      ret[i].first.size(), NULL));
+        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[i].first));
         PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
-#ifdef IS_PY3
-        PyObject *item = IdWithScoreType->tp_new(IdWithScoreType, args, NULL);
-        IdWithScoreType->tp_init(item, args, NULL);
-#else
-        PyObject *item = PyInstance_New((PyObject*)IdWithScoreType, args, NULL);
-#endif
-        PyList_SetItem(vec, i, item);
+        PyList_SetItem(vec, i, CreateInstanceAndInit(IdWithScoreType, args, NULL));
     }
     return vec;
 }
@@ -201,9 +162,7 @@ PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args)
     std::vector<std::string> vec = self->handle->get_all_rows();
     PyObject *ret = PyList_New(vec.size());
     for (int i = 0; i < vec.size(); ++i) {
-        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8(vec[i].data(),
-                                                    vec[i].size(),
-                                                    NULL));
+        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8_FromString(vec[i]));
     }
     return ret;
 }

@@ -2,6 +2,7 @@ from nose.tools import assert_raises
 from jubatus.embedded import Recommender
 from jubatus.common import Datum
 from jubatus.recommender.types import IdWithScore
+import json
 
 RECOMMENDER_CONFIG = {
     'method': 'lsh',
@@ -61,3 +62,7 @@ def test():
     assert isinstance(r, float)
     r = x.calc_l2norm(Datum({'x': 1, 'y': 5}))
     assert isinstance(r, float)
+
+    x.clear()
+    assert len(x.get_all_rows()) == 0
+    assert json.loads(x.get_config())

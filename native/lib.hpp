@@ -39,6 +39,7 @@ typedef struct {
     shared_ptr<std::string> config;
 } RecommenderObject;
 
+int PyLongToNative(PyObject *py_long, long &out);
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
 int PyBytesToNative(PyObject *py_bin, std::string &out);
 int PyNumberToDouble(PyObject *py_num, double &out);
@@ -46,11 +47,41 @@ int PyDatumToNativeDatum(PyObject *py_datum, jubafvconv::datum &datum);
 int PyDictToJson(PyObject *py_dict, std::string &out);
 PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum);
 
+inline int LookupTypeObject(const char *module_name, const char *type_name, PyTypeObject **type) {
+    if (*type) return 1;
+    PyObject *m = PyImport_ImportModule(module_name);
+    if (!m) return 0;
+    *type = (PyTypeObject*)PyObject_GetAttrString(m, type_name);
+    Py_DECREF(m);
+    return (*type ? 1 : 0);
+}
+inline PyObject* CreateInstanceAndInit(PyTypeObject *type, PyObject *args, PyObject **kwargs) {
+#ifdef IS_PY3
+    PyObject *obj = type->tp_new(type, args, NULL);
+    type->tp_init(obj, args, NULL);
+    return obj;
+#else
+    return PyInstance_New((PyObject*)type, args, NULL);
+#endif
+}
+inline PyObject *PyUnicode_DecodeUTF8_FromString(const std::string &str) {
+    return PyUnicode_DecodeUTF8(str.data(), str.size(), NULL);
+}
 PyObject* SerializeModel(const std::string& type_, const std::string& config_, const std::string& id_,
                          const msgpack::sbuffer& user_data_buf);
 int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
                     std::string& model_type, std::string& model_id, std::string& model_config,
                     uint64_t *user_data_version, msgpack::object **user_data);
+
+template<typename T>
+PyObject *CommonApiClear(T *self, PyObject *args) {
+    self->handle->clear();
+    Py_RETURN_NONE;
+}
+template<typename T>
+PyObject *CommonApiGetConfig(T *self, PyObject *args) {
+    return PyUnicode_DecodeUTF8_FromString(*(self->config));
+}
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs);
 void ClassifierDealloc(ClassifierObject *self);
@@ -90,14 +121,16 @@ static PyMethodDef ClassifierMethods[] = {
     {"delete_label", (PyCFunction)ClassifierDeleteLabel, METH_O, ""},
     {"dump", (PyCFunction)ClassifierDump, METH_NOARGS, ""},
     {"load", (PyCFunction)ClassifierLoad, METH_O, ""},
-    {"clear", (PyCFunction)ClassifierClear, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)ClassifierGetConfig, METH_NOARGS, ""},
+    {"clear", (PyCFunction)CommonApiClear<ClassifierObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<ClassifierObject>, METH_NOARGS, ""},
     {NULL}
 };
 
 static PyMethodDef AnomalyMethods[] = {
     {"add", (PyCFunction)AnomalyAdd, METH_O, ""},
     {"calc_score", (PyCFunction)AnomalyCalcScore, METH_O, ""},
+    {"clear", (PyCFunction)CommonApiClear<AnomalyObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<AnomalyObject>, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -112,6 +145,8 @@ static PyMethodDef RecommenderMethods[] = {
     {"get_all_rows", (PyCFunction)RecommenderGetAllRows, METH_NOARGS, ""},
     {"calc_similarity", (PyCFunction)RecommenderCalcSimilarity, METH_VARARGS, ""},
     {"calc_l2norm", (PyCFunction)RecommenderCalcL2Norm, METH_O, ""},
+    {"clear", (PyCFunction)CommonApiClear<RecommenderObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<RecommenderObject>, METH_NOARGS, ""},
     {NULL}
 };
 

@@ -7,12 +7,7 @@
 #include <jubatus/core/driver/classifier.hpp>
 #include "lib.hpp"
 
-#ifdef IS_PY3
 static PyTypeObject *EstimateResultType = NULL;
-#else
-static PyClassObject *EstimateResultType = NULL;
-#endif
-
 static const std::string TYPE("classifier");
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
@@ -50,17 +45,8 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
         return -1;
     }
 
-    if (!EstimateResultType) {
-        PyObject *m = PyImport_ImportModule("jubatus.classifier.types");
-        if (m) {
-#ifdef IS_PY3
-            EstimateResultType = (PyTypeObject*)PyObject_GetAttrString(m, "EstimateResult");
-#else
-            EstimateResultType = (PyClassObject*)PyObject_GetAttrString(m, "EstimateResult");
-#endif
-            Py_DECREF(m);
-        }
-    }
+    if (!LookupTypeObject("jubatus.classifier.types", "EstimateResult", &EstimateResultType))
+        return -1;
     return 0;
 }
 
@@ -112,15 +98,9 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
         PyObject *tmp = PyList_New(ret.size());
         for (int j = 0; j < ret.size(); ++j) {
             PyObject *args = PyTuple_New(2);
-            PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret[j].label.c_str(), ret[j].label.size(), NULL));
+            PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[j].label));
             PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[j].score));
-#ifdef IS_PY3
-            PyObject *er = EstimateResultType->tp_new(EstimateResultType, args, NULL);
-            EstimateResultType->tp_init(er, args, NULL);
-#else
-            PyObject *er = PyInstance_New((PyObject*)EstimateResultType, args, NULL);
-#endif            
-            PyList_SetItem(tmp, j, er);
+            PyList_SetItem(tmp, j, CreateInstanceAndInit(EstimateResultType, args, NULL));
         }
         PyList_SetItem(out, i, tmp);
     }
@@ -132,7 +112,7 @@ PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*)
     std::vector<std::string> labels = self->handle->get_labels();
     PyObject *ret = PyList_New(labels.size());
     for (int i = 0; i < labels.size(); ++i) {
-        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8(labels[i].c_str(), labels[i].size(), NULL));
+        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8_FromString(labels[i]));
     }
     return ret;
 }
@@ -182,15 +162,4 @@ PyObject *ClassifierLoad(ClassifierObject *self, PyObject *args)
         return NULL;
     self->handle->unpack(*user_data);
     Py_RETURN_NONE;
-}
-
-PyObject *ClassifierClear(ClassifierObject *self, PyObject *args)
-{
-    self->handle->clear();
-    Py_RETURN_NONE;
-}
-
-PyObject *ClassifierGetConfig(ClassifierObject *self, PyObject *args)
-{
-    return PyUnicode_DecodeUTF8(self->config->c_str(), self->config->size(), NULL);
 }

@@ -1,6 +1,7 @@
 from nose.tools import assert_raises
 from jubatus.embedded import Anomaly
 from jubatus.common import Datum
+import json
 
 ANOMALY_CONFIG = {
     'method': 'lof',
@@ -46,3 +47,7 @@ def test_anomaly():
     x.add(Datum({'x': 0.101}))
     x.add(Datum({'x': 0.1001}))
     x.calc_score(Datum({'x': 0.1001}))
+
+    x.clear()
+    assert x.add(Datum({'x': 0.1})).score == float('inf')
+    assert json.loads(x.get_config())

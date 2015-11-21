@@ -1,6 +1,7 @@
 from nose.tools import assert_raises
 from jubatus.embedded import Classifier
 from jubatus.common import Datum
+import json
 
 CLASSIFIER_CONFIG = {
     "method": "perceptron",
@@ -67,6 +68,7 @@ def test_classifier_num():
     assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
             for z in y] == ['Y', 'N']
     assert sorted(x.get_labels()) == [u'N', u'Y']
+    assert json.loads(x.get_config())
 
 def test_classifier_str():
     x = Classifier(CLASSIFIER_CONFIG);

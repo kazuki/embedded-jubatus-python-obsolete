@@ -14,6 +14,20 @@ using jubatus::core::common::read_big_endian;
 
 using jubatus::server::common::calc_crc32;
 
+int PyLongToNative(PyObject *py_long, long &out)
+{
+#ifdef IS_PY3
+    if (!PyLong_Check(py_long))
+        return 0;
+    out = PyLong_AsLong(py_long);
+#else
+    if (!PyLong_Check(py_long) && !PyInt_Check(py_long))
+        return 0;
+    out = (PyInt_Check(py_long) ? PyInt_AsLong(py_long) : PyLong_AsLong(py_long));
+#endif
+    return 1;
+}
+
 /*
  * Pythonの文字列型(Unicode, Py2のみString)を，UTF8で符号化されたstd::stringに変換する
  */
