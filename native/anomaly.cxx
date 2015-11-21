@@ -1,5 +1,6 @@
 #include <jubatus/core/anomaly/anomaly_factory.hpp>
 #include "lib.hpp"
+#include "helper.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;
 

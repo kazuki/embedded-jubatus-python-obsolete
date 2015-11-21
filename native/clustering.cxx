@@ -1,5 +1,6 @@
 #include <jubatus/core/clustering/clustering.hpp>
 #include "lib.hpp"
+#include "helper.hpp"
 
 int ClusteringInit(ClusteringObject *self, PyObject *args, PyObject *kwargs)
 {

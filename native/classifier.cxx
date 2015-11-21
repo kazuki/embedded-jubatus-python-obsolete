@@ -2,6 +2,7 @@
 #include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/classifier/classifier_factory.hpp>
 #include "lib.hpp"
+#include "helper.hpp"
 
 static PyTypeObject *EstimateResultType = NULL;
 static const std::string TYPE("classifier");
@@ -88,12 +89,7 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
 
 PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*)
 {
-    std::vector<std::string> labels = self->handle->get_labels();
-    PyObject *ret = PyList_New(labels.size());
-    for (int i = 0; i < labels.size(); ++i) {
-        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8_FromString(labels[i]));
-    }
-    return ret;
+    return Convert(self->handle->get_labels());
 }
 
 PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args)

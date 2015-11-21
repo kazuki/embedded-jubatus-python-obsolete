@@ -8,6 +8,7 @@
 #include <cstring>
 #include <ctime>
 #include "lib.hpp"
+#include "helper.hpp"
 
 using jubatus::core::common::write_big_endian;
 using jubatus::core::common::read_big_endian;
@@ -372,4 +373,64 @@ int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
     if (bytes_obj)
         Py_DECREF(bytes_obj);
     return ret;
+}
+
+int ParseArgument(PyObject *args, std::string &out0, long &out1)
+{
+    PyObject *py_id;
+    PyObject *py_size;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_size))
+        return 0;
+    if (!PyUnicodeToUTF8(py_id, out0))
+        return 0;
+    if (!PyLongToNative(py_size, out1))
+        return 0;
+    return 1;
+}
+
+int ParseArgument(PyObject *args, jubafvconv::datum &out0, long &out1)
+{
+    PyObject *py_datum;
+    PyObject *py_size;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum, &py_size))
+        return 0;
+    if (!PyDatumToNativeDatum(py_datum, out0))
+        return 0;
+    if (!PyLongToNative(py_size, out1))
+        return 0;
+    return 1;
+}
+
+int ParseArgument(PyObject *args, std::string &out0, jubafvconv::datum &out1)
+{
+    PyObject *py_id;
+    PyObject *py_datum;
+    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_datum))
+        return 0;
+    if (!PyUnicodeToUTF8(py_id, out0))
+        return 0;
+    if (!PyDatumToNativeDatum(py_datum, out1))
+        return 0;
+    return 1;
+}
+
+PyObject *Convert(const std::vector<std::string> &list)
+{
+    PyObject *ret = PyList_New(list.size());
+    for (int i = 0; i < list.size(); ++i) {
+        PyList_SetItem(ret, i, PyUnicode_DecodeUTF8_FromString(list[i]));
+    }
+    return ret;
+}
+
+PyObject *ConvertToIdWithScoreList(const std::vector<std::pair<std::string, float> > &ret, PyTypeObject *type)
+{
+    PyObject *vec = PyList_New(ret.size());
+    for (int i = 0; i < ret.size(); ++i) {
+        PyObject *args = PyTuple_New(2);
+        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[i].first));
+        PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
+        PyList_SetItem(vec, i, CreateInstanceAndInit(type, args, NULL));
+    }
+    return vec;
 }

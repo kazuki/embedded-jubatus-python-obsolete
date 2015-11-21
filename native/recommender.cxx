@@ -1,5 +1,6 @@
 #include <jubatus/core/recommender/recommender_factory.hpp>
 #include "lib.hpp"
+#include "helper.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;
 
@@ -44,18 +45,10 @@ PyObject *RecommenderClearRow(RecommenderObject *self, PyObject *args)
 
 PyObject *RecommenderUpdateRow(RecommenderObject *self, PyObject *args)
 {
-    PyObject *py_id;
-    PyObject *py_datum;
-    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_datum))
-        return NULL;
-
     std::string id;
     jubafvconv::datum datum;
-    if (!PyUnicodeToUTF8(py_id, id))
+    if (!ParseArgument(args, id, datum))
         return NULL;
-    if (!PyDatumToNativeDatum(py_datum, datum))
-        return NULL;
-
     self->handle->update_row(id, datum);
     Py_RETURN_TRUE;
 }
@@ -80,50 +73,24 @@ PyObject *RecommenderCompleteRowFromDatum(RecommenderObject *self, PyObject *arg
 
 PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
 {
-    PyObject *py_id;
-    PyObject *py_size;
-    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_id, &py_size))
-        return NULL;
-
-    long size;
-    if (!PyLongToNative(py_size, size))
-        return NULL;
     std::string id;
-    if (!PyUnicodeToUTF8(py_id, id))
+    long size;
+    if (!ParseArgument(args, id, size))
         return NULL;
-    std::vector<std::pair<std::string, float> > ret = self->handle->similar_row_from_id(id, size);
-    PyObject *vec = PyList_New(ret.size());
-    for (int i = 0; i < ret.size(); ++i) {
-        PyObject *args = PyTuple_New(2);
-        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[i].first));
-        PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
-        PyList_SetItem(vec, i, CreateInstanceAndInit(IdWithScoreType, args, NULL));
-    }
-    return vec;
+    return ConvertToIdWithScoreList(
+        self->handle->similar_row_from_id(id, size),
+        IdWithScoreType);
 }
 
 PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args)
 {
-    PyObject *py_datum;
-    PyObject *py_size;
-    if (!PyArg_UnpackTuple(args, "args", 2, 2, &py_datum, &py_size))
-        return NULL;
-
-    long size;
-    if (!PyLongToNative(py_size, size))
-        return NULL;
     jubafvconv::datum datum;
-    if (!PyDatumToNativeDatum(py_datum, datum))
+    long size;
+    if (!ParseArgument(args, datum, size))
         return NULL;
-    std::vector<std::pair<std::string, float> > ret = self->handle->similar_row_from_datum(datum, size);
-    PyObject *vec = PyList_New(ret.size());
-    for (int i = 0; i < ret.size(); ++i) {
-        PyObject *args = PyTuple_New(2);
-        PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret[i].first));
-        PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret[i].second));
-        PyList_SetItem(vec, i, CreateInstanceAndInit(IdWithScoreType, args, NULL));
-    }
-    return vec;
+    return ConvertToIdWithScoreList(
+        self->handle->similar_row_from_datum(datum, size),
+        IdWithScoreType);
 }
 
 PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args)

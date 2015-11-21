@@ -1,6 +1,7 @@
 #include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/regression/regression_factory.hpp>
 #include "lib.hpp"
+#include "helper.hpp"
 
 static PyTypeObject *ScoredDatumType = NULL;
 

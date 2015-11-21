@@ -1,4 +1,5 @@
 #include "lib.hpp"
+#include "helper.hpp"
 
 int BurstInit(BurstObject *self, PyObject *args, PyObject *kwargs)
 {

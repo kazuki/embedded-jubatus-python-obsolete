@@ -1,4 +1,5 @@
 #include "lib.hpp"
+#include "helper.hpp"
 
 int BanditInit(BanditObject *self, PyObject *args, PyObject *kwargs)
 {

@@ -34,11 +34,11 @@
   - [X] calc_l2norm
   - [ ] load / dump / clear / get_config
 - [X] [Nearest Neighbor](http://jubat.us/ja/api_nearest_neighbor.html)
-  - [ ] set_row
-  - [ ] neighbor_row_from_id
-  - [ ] similar_row_from_id
-  - [ ] similar_row_from_datum
-  - [ ] get_all_rows
+  - [X] set_row
+  - [X] neighbor_row_from_id
+  - [X] similar_row_from_id
+  - [X] similar_row_from_datum
+  - [X] get_all_rows
   - [ ] load / dump / clear / get_config
 - [X] [Anomaly](http://jubat.us/ja/api_anomaly.html)
   - [X] add
