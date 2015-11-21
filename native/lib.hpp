@@ -131,6 +131,12 @@ void NearestNeighborDealloc(NearestNeighborObject *self);
 
 int ClusteringInit(ClusteringObject *self, PyObject *args, PyObject *kwargs);
 void ClusteringDealloc(ClusteringObject *self);
+PyObject *ClusteringPush(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringGetRevision(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringGetCoreMembers(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringGetKCenter(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringGetNearestCenter(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringGetNearestMembers(ClusteringObject *self, PyObject *args);
 
 int BurstInit(BurstObject *self, PyObject *args, PyObject *kwargs);
 void BurstDealloc(BurstObject *self);
@@ -200,6 +206,12 @@ static PyMethodDef NearestNeighborMethods[] = {
 };
 
 static PyMethodDef ClusteringMethods[] = {
+    {"push", (PyCFunction)ClusteringPush, METH_O, ""},
+    {"get_revision", (PyCFunction)ClusteringGetRevision, METH_NOARGS, ""},
+    {"get_core_members", (PyCFunction)ClusteringGetCoreMembers, METH_NOARGS, ""},
+    {"get_k_center", (PyCFunction)ClusteringGetKCenter, METH_NOARGS, ""},
+    {"get_nearest_center", (PyCFunction)ClusteringGetNearestCenter, METH_O, ""},
+    {"get_nearest_members", (PyCFunction)ClusteringGetNearestMembers, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<ClusteringObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<ClusteringObject>, METH_NOARGS, ""},
     {NULL}

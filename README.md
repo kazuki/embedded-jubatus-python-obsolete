@@ -49,12 +49,12 @@
   - [X] get_all_rows
   - [ ] load / dump / clear / get_config
 - [X] [Clustering](http://jubat.us/ja/api_clustering.html)
-  - [ ] push
-  - [ ] get_revision
-  - [ ] get_core_members
-  - [ ] get_k_center
-  - [ ] get_nearest_center
-  - [ ] get_nearest_members
+  - [X] push
+  - [X] get_revision
+  - [X] get_core_members
+  - [X] get_k_center
+  - [X] get_nearest_center
+  - [X] get_nearest_members
   - [ ] load / dump / clear / get_config
 - [X] [Burst](http://jubat.us/ja/api_burst.html)
   - [ ] add_documents
