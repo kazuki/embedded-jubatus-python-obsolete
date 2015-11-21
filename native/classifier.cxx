@@ -24,8 +24,8 @@ int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
     if (!PyDictToJson(py_config_obj, str_config_json))
         return -1;
 
-    auto config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
-    auto method_value = (jubajson::json_string*)config_json["method"].get();
+    jubajson::json config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
+    jubajson::json_string *method_value = (jubajson::json_string*)config_json["method"].get();
     if (!method_value || method_value->type() != jubajson::json::String) {
         PyErr_SetString(PyExc_TypeError, "invalid config");
         return -1;

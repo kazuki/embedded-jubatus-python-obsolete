@@ -22,8 +22,8 @@ int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
     if (!PyDictToJson(py_config_obj, str_config_json))
         return -1;
 
-    auto config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
-    auto method_value = (jubajson::json_string*)config_json["method"].get();
+    jubajson::json config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
+    jubajson::json_string *method_value = (jubajson::json_string*)config_json["method"].get();
     if (!method_value || method_value->type() != jubajson::json::String) {
         PyErr_SetString(PyExc_TypeError, "invalid config");
         return -1;
@@ -77,7 +77,7 @@ PyObject *AnomalyAdd(AnomalyObject *self, PyObject *py_datum)
     if (!PyDatumToNativeDatum(py_datum, datum))
         return NULL;
     std::string id_str = jubalang::lexical_cast<std::string>(self->idgen++);
-    auto ret = self->handle->add(id_str, datum);
+    std::pair<std::string, float> ret = self->handle->add(id_str, datum);
     PyObject *args = PyTuple_New(2);
     PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8(ret.first.c_str(), ret.first.size(), NULL));
     PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret.second));

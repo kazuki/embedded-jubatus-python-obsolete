@@ -22,8 +22,8 @@ int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
     if (!PyDictToJson(py_config_obj, str_config_json))
         return -1;
 
-    auto config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
-    auto method_value = (jubajson::json_string*)config_json["method"].get();
+    jubajson::json config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
+    jubajson::json_string *method_value = (jubajson::json_string*)config_json["method"].get();
     if (!method_value || method_value->type() != jubajson::json::String) {
         PyErr_SetString(PyExc_TypeError, "invalid config");
         return -1;
@@ -133,7 +133,7 @@ PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
     std::string id;
     if (!PyUnicodeToUTF8(py_id, id))
         return NULL;
-    auto ret = self->handle->similar_row_from_id(id, size);
+    std::vector<std::pair<std::string, float> > ret = self->handle->similar_row_from_id(id, size);
     PyObject *vec = PyList_New(ret.size());
     for (int i = 0; i < ret.size(); ++i) {
         PyObject *args = PyTuple_New(2);
@@ -170,7 +170,7 @@ PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(py_datum, datum))
         return NULL;
-    auto ret = self->handle->similar_row_from_datum(datum, size);
+    std::vector<std::pair<std::string, float> > ret = self->handle->similar_row_from_datum(datum, size);
     PyObject *vec = PyList_New(ret.size());
     for (int i = 0; i < ret.size(); ++i) {
         PyObject *args = PyTuple_New(2);
@@ -198,7 +198,7 @@ PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args)
 
 PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args)
 {
-    auto vec = self->handle->get_all_rows();
+    std::vector<std::string> vec = self->handle->get_all_rows();
     PyObject *ret = PyList_New(vec.size());
     for (int i = 0; i < vec.size(); ++i) {
         PyList_SetItem(ret, i, PyUnicode_DecodeUTF8(vec[i].data(),

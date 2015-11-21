@@ -19,8 +19,7 @@ setup(
                 'native/recommender.cxx',
             ],
             include_dirs=['native'],
-            libraries=['jubatus_core', 'jubaserv_common'],
-            extra_compile_args=['-std=c++11']
+            libraries=['jubatus_core', 'jubaserv_common']
         )
     ]
 )

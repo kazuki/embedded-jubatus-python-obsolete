@@ -161,28 +161,31 @@ PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum)
     }
 
     PyObject *dict = PyDict_New();
-    for (auto pair: datum.string_values_) {
-        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
-                                             pair.first.size(), NULL);
-        PyObject *val = PyUnicode_DecodeUTF8(pair.second.data(),
-                                             pair.second.size(), NULL);
+    for (jubafvconv::datum::sv_t::const_iterator it = datum.string_values_.begin();
+         it != datum.string_values_.end(); it ++) {
+        PyObject *key = PyUnicode_DecodeUTF8(it->first.data(),
+                                             it->first.size(), NULL);
+        PyObject *val = PyUnicode_DecodeUTF8(it->second.data(),
+                                             it->second.size(), NULL);
         PyDict_SetItem(dict, key, val);
     }
-    for (auto pair: datum.num_values_) {
-        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
-                                             pair.first.size(), NULL);
-        PyObject *val = PyFloat_FromDouble(pair.second);
+    for (jubafvconv::datum::nv_t::const_iterator it = datum.num_values_.begin();
+         it != datum.num_values_.end(); it ++) {
+        PyObject *key = PyUnicode_DecodeUTF8(it->first.data(),
+                                             it->first.size(), NULL);
+        PyObject *val = PyFloat_FromDouble(it->second);
         PyDict_SetItem(dict, key, val);
     }
-    for (auto pair: datum.binary_values_) {
-        PyObject *key = PyUnicode_DecodeUTF8(pair.first.data(),
-                                             pair.first.size(), NULL);
+    for (jubafvconv::datum::sv_t::const_iterator it = datum.binary_values_.begin();
+         it != datum.binary_values_.end(); it ++) {
+        PyObject *key = PyUnicode_DecodeUTF8(it->first.data(),
+                                             it->first.size(), NULL);
 #ifdef IS_PY3
-        PyObject *val = PyBytes_FromStringAndSize(pair.second.data(),
-                                                  pair.second.size());
+        PyObject *val = PyBytes_FromStringAndSize(it->second.data(),
+                                                  it->second.size());
 #else
-        PyObject *val = PyString_FromStringAndSize(pair.second.data(),
-                                                   pair.second.size());
+        PyObject *val = PyString_FromStringAndSize(it->second.data(),
+                                                   it->second.size());
 #endif
         PyDict_SetItem(dict, key, val);
     }
