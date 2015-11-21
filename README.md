@@ -18,8 +18,8 @@
   - [X] delete_label
   - [X] load / dump / clear / get_config
 - [X] [Regression](http://jubat.us/ja/api_regression.html)
-  - [ ] train
-  - [ ] estimate
+  - [X] train
+  - [X] estimate
   - [ ] load / dump / clear / get_config
 - [X] [Recommender](http://jubat.us/ja/api_recommender.html)
   - [X] clear_row

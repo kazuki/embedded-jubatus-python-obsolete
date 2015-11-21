@@ -202,6 +202,8 @@ PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args);
 
 int RegressionInit(RegressionObject *self, PyObject *args, PyObject *kwargs);
+PyObject *RegressionTrain(RegressionObject *self, PyObject *args);
+PyObject *RegressionEstimate(RegressionObject *self, PyObject *args);
 void RegressionDealloc(RegressionObject *self);
 
 int NearestNeighborInit(NearestNeighborObject *self, PyObject *args, PyObject *kwargs);
@@ -254,6 +256,8 @@ static PyMethodDef RecommenderMethods[] = {
 };
 
 static PyMethodDef RegressionMethods[] = {
+    {"train", (PyCFunction)RegressionTrain, METH_O, ""},
+    {"estimate", (PyCFunction)RegressionEstimate, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<RegressionObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<RegressionObject>, METH_NOARGS, ""},
     {NULL}

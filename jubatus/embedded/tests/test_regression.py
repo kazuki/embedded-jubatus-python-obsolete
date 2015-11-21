@@ -1,5 +1,7 @@
 from nose.tools import assert_raises
 from jubatus.embedded import Regression
+from jubatus.common import Datum
+from jubatus.regression.types import ScoredDatum
 import json
 
 REGRESSION_CONFIG = {
@@ -37,5 +39,18 @@ def test_invalid_args():
 
 def test():
     x = Regression(REGRESSION_CONFIG)
-    # TODO
+    assert x.train([
+        ScoredDatum(0.0, Datum({'x': 1.0})),
+        ScoredDatum(1.0, Datum({'x': 2.0})),
+        ScoredDatum(2.0, Datum({'x': 4.0})),
+        ScoredDatum(3.0, Datum({'x': 8.0})),
+        ScoredDatum(4.0, Datum({'x': 16.0})),
+    ]) == 5
+    ret = x.estimate([
+        Datum({'x': 32.0}),
+        Datum({'x': 1.5}),
+    ])
+    assert len(ret) == 2
+    assert ret[0] >= 8.0 and ret[0] < 9.0
+    assert ret[1] >= 0.0 and ret[1] < 1.0
     assert json.loads(x.get_config())
