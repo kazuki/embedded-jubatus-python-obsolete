@@ -1,9 +1,6 @@
-#include <Python.h>
 #include <jubatus/core/framework/stream_writer.hpp>
-#include <jubatus/core/fv_converter/datum_to_fv_converter.hpp>
 #include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/classifier/classifier_factory.hpp>
-#include <jubatus/core/driver/classifier.hpp>
 #include "lib.hpp"
 
 static PyTypeObject *EstimateResultType = NULL;

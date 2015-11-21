@@ -7,7 +7,12 @@
 #include <jubatus/core/fv_converter/datum.hpp>
 #include <jubatus/core/driver/anomaly.hpp>
 #include <jubatus/core/driver/classifier.hpp>
+#include <jubatus/core/driver/nearest_neighbor.hpp>
 #include <jubatus/core/driver/recommender.hpp>
+#include <jubatus/core/driver/regression.hpp>
+#include <jubatus/core/driver/clustering.hpp>
+#include <jubatus/core/driver/burst.hpp>
+#include <jubatus/core/driver/bandit.hpp>
 #include <jubatus/util/text/json.h>
 
 #if PY_MAJOR_VERSION >= 3
@@ -39,6 +44,31 @@ typedef struct {
     shared_ptr<jubadriver::recommender> handle;
     shared_ptr<std::string> config;
 } RecommenderObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::regression> handle;
+    shared_ptr<std::string> config;
+} RegressionObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::nearest_neighbor> handle;
+    shared_ptr<std::string> config;
+} NearestNeighborObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::clustering> handle;
+    shared_ptr<std::string> config;
+} ClusteringObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::burst> handle;
+    shared_ptr<std::string> config;
+} BurstObject;
+typedef struct {
+    PyObject_HEAD;
+    shared_ptr<jubadriver::bandit> handle;
+    shared_ptr<std::string> config;
+} BanditObject;
 
 int PyLongToNative(PyObject *py_long, long &out);
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out);
@@ -105,6 +135,33 @@ int ParseInitArgs(T* self, PyObject *args, std::string &out_method,
 }
 
 template<typename T>
+int ParseInitArgsWithoutConv(T* self, PyObject *args, std::string &out_method,
+                             jubacomm::jsonconfig::config &out_config) {
+    PyObject *py_config_obj;
+    if (!PyArg_ParseTuple(args, "O!", &PyDict_Type, &py_config_obj))
+        return 0;
+    std::string str_config_json;
+    if (!PyDictToJson(py_config_obj, str_config_json))
+        return 0;
+
+    jubajson::json config_json = jubalang::lexical_cast<jubajson::json>(str_config_json);
+    jubajson::json_string *method_value = (jubajson::json_string*)config_json["method"].get();
+    if (!method_value || method_value->type() != jubajson::json::String) {
+        PyErr_SetString(PyExc_TypeError, "invalid config");
+        return 0;
+    }
+    out_method.assign(method_value->get());
+    try {
+        out_config = jubacomm::jsonconfig::config(config_json["parameter"]);
+        self->config.reset(new std::string(str_config_json));
+    } catch (std::exception &e) {
+        PyErr_SetString(PyExc_TypeError, e.what());
+        return 0;
+    }
+    return 1;
+}
+
+template<typename T>
 PyObject *CommonApiClear(T *self, PyObject *args) {
     self->handle->clear();
     Py_RETURN_NONE;
@@ -144,6 +201,21 @@ PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args);
 
+int RegressionInit(RegressionObject *self, PyObject *args, PyObject *kwargs);
+void RegressionDealloc(RegressionObject *self);
+
+int NearestNeighborInit(NearestNeighborObject *self, PyObject *args, PyObject *kwargs);
+void NearestNeighborDealloc(NearestNeighborObject *self);
+
+int ClusteringInit(ClusteringObject *self, PyObject *args, PyObject *kwargs);
+void ClusteringDealloc(ClusteringObject *self);
+
+int BurstInit(BurstObject *self, PyObject *args, PyObject *kwargs);
+void BurstDealloc(BurstObject *self);
+
+int BanditInit(BanditObject *self, PyObject *args, PyObject *kwargs);
+void BanditDealloc(BanditObject *self);
+
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
     {"classify", (PyCFunction)ClassifierClassify, METH_O, ""},
@@ -178,6 +250,36 @@ static PyMethodDef RecommenderMethods[] = {
     {"calc_l2norm", (PyCFunction)RecommenderCalcL2Norm, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<RecommenderObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<RecommenderObject>, METH_NOARGS, ""},
+    {NULL}
+};
+
+static PyMethodDef RegressionMethods[] = {
+    {"clear", (PyCFunction)CommonApiClear<RegressionObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<RegressionObject>, METH_NOARGS, ""},
+    {NULL}
+};
+
+static PyMethodDef NearestNeighborMethods[] = {
+    {"clear", (PyCFunction)CommonApiClear<NearestNeighborObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<NearestNeighborObject>, METH_NOARGS, ""},
+    {NULL}
+};
+
+static PyMethodDef ClusteringMethods[] = {
+    {"clear", (PyCFunction)CommonApiClear<ClusteringObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<ClusteringObject>, METH_NOARGS, ""},
+    {NULL}
+};
+
+static PyMethodDef BurstMethods[] = {
+    {"clear", (PyCFunction)CommonApiClear<BurstObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<BurstObject>, METH_NOARGS, ""},
+    {NULL}
+};
+
+static PyMethodDef BanditMethods[] = {
+    {"clear", (PyCFunction)CommonApiClear<BanditObject>, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)CommonApiGetConfig<BanditObject>, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -301,10 +403,215 @@ static PyTypeObject RecommenderObjectType = {
     0,                         /* tp_alloc */
     0,                         /* tp_new */
 };
+static PyTypeObject RegressionObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Regression",                 /* tp_name */
+    sizeof(RegressionObjectType), /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)RegressionDealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Regression",              /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    RegressionMethods,         /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)RegressionInit,  /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+static PyTypeObject NearestNeighborObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "NearestNeighbor",         /* tp_name */
+    sizeof(NearestNeighborObjectType), /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)NearestNeighborDealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "NearestNeighbor",              /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    NearestNeighborMethods,    /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)NearestNeighborInit, /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+static PyTypeObject ClusteringObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Clustering",              /* tp_name */
+    sizeof(ClusteringObjectType), /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)ClusteringDealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Clustering",              /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    ClusteringMethods,         /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)ClusteringInit,  /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+static PyTypeObject BurstObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Burst",                   /* tp_name */
+    sizeof(BurstObjectType),   /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)BurstDealloc,  /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Burst",                   /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    BurstMethods,              /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)BurstInit,       /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
+static PyTypeObject BanditObjectType = {
+    PyVarObject_HEAD_INIT(NULL, 0)
+    "Bandit",                  /* tp_name */
+    sizeof(BanditObjectType),  /* tp_basicsize */
+    0,                         /* tp_itemsize */
+    (destructor)BanditDealloc, /* tp_dealloc */
+    0,                         /* tp_print */
+    0,                         /* tp_getattr */
+    0,                         /* tp_setattr */
+    0,                         /* tp_reserved */
+    0,                         /* tp_repr */
+    0,                         /* tp_as_number */
+    0,                         /* tp_as_sequence */
+    0,                         /* tp_as_mapping */
+    0,                         /* tp_hash  */
+    0,                         /* tp_call */
+    0,                         /* tp_str */
+    0,                         /* tp_getattro */
+    0,                         /* tp_setattro */
+    0,                         /* tp_as_buffer */
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_BASETYPE, /* tp_flags */
+    "Bandit",                  /* tp_doc */
+    0,                         /* tp_traverse */
+    0,                         /* tp_clear */
+    0,                         /* tp_richcompare */
+    0,                         /* tp_weaklistoffset */
+    0,                         /* tp_iter */
+    0,                         /* tp_iternext */
+    BanditMethods,             /* tp_methods */
+    0,                         /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    (initproc)BanditInit,      /* tp_init */
+    0,                         /* tp_alloc */
+    0,                         /* tp_new */
+};
 static PyTypeObject *_EmbeddedTypes[] = {
     &ClassifierObjectType,
     &AnomalyObjectType,
     &RecommenderObjectType,
+    &RegressionObjectType,
+    &NearestNeighborObjectType,
+    &ClusteringObjectType,
+    &BurstObjectType,
+    &BanditObjectType,
     NULL
 };
 

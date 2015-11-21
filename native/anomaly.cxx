@@ -1,10 +1,4 @@
-#include <Python.h>
-#include <jubatus/core/common/jsonconfig.hpp>
-#include <jubatus/core/framework/stream_writer.hpp>
-#include <jubatus/core/fv_converter/datum_to_fv_converter.hpp>
-#include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/anomaly/anomaly_factory.hpp>
-#include <jubatus/core/driver/anomaly.hpp>
 #include "lib.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;

@@ -17,6 +17,11 @@ setup(
                 'native/anomaly.cxx',
                 'native/classifier.cxx',
                 'native/recommender.cxx',
+                'native/regression.cxx',
+                'native/nearest_neighbor.cxx',
+                'native/clustering.cxx',
+                'native/burst.cxx',
+                'native/bandit.cxx',
             ],
             include_dirs=['native'],
             libraries=['jubatus_core', 'jubaserv_common']

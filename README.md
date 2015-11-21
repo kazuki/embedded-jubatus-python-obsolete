@@ -17,7 +17,7 @@
   - [X] set_label
   - [X] delete_label
   - [X] load / dump / clear / get_config
-- [ ] [Regression](http://jubat.us/ja/api_regression.html)
+- [X] [Regression](http://jubat.us/ja/api_regression.html)
   - [ ] train
   - [ ] estimate
   - [ ] load / dump / clear / get_config
@@ -33,7 +33,7 @@
   - [X] calc_similarity
   - [X] calc_l2norm
   - [ ] load / dump / clear / get_config
-- [ ] [Nearest Neighbor](http://jubat.us/ja/api_nearest_neighbor.html)
+- [X] [Nearest Neighbor](http://jubat.us/ja/api_nearest_neighbor.html)
   - [ ] set_row
   - [ ] neighbor_row_from_id
   - [ ] similar_row_from_id
@@ -48,7 +48,7 @@
   - [ ] overwrite
   - [ ] get_all_rows
   - [ ] load / dump / clear / get_config
-- [ ] [Clustering](http://jubat.us/ja/api_clustering.html)
+- [X] [Clustering](http://jubat.us/ja/api_clustering.html)
   - [ ] push
   - [ ] get_revision
   - [ ] get_core_members
@@ -56,7 +56,7 @@
   - [ ] get_nearest_center
   - [ ] get_nearest_members
   - [ ] load / dump / clear / get_config
-- [ ] [Burst](http://jubat.us/ja/api_burst.html)
+- [X] [Burst](http://jubat.us/ja/api_burst.html)
   - [ ] add_documents
   - [ ] get_result
   - [ ] get_result_at
@@ -67,7 +67,7 @@
   - [ ] remove_keyword
   - [ ] remove_all_keywords
   - [ ] load / dump / clear / get_config
-- [ ] [Bandit](http://jubat.us/ja/api_bandit.html)
+- [X] [Bandit](http://jubat.us/ja/api_bandit.html)
   - [ ] register_arm
   - [ ] delete_arm
   - [ ] select_arm
