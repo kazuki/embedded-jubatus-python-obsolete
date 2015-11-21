@@ -55,3 +55,35 @@ PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args)
         return NULL;
     return PyFloat_FromDouble(self->handle->calc_score(datum));
 }
+
+PyObject *AnomalyClearRow(AnomalyObject *self, PyObject *args)
+{
+    std::string id;
+    if (!PyUnicodeToUTF8(args, id))
+        return NULL;
+    self->handle->clear_row(id);
+    Py_RETURN_TRUE;
+}
+
+PyObject *AnomalyUpdate(AnomalyObject *self, PyObject *args)
+{
+    std::string id;
+    jubafvconv::datum d;
+    if (!ParseArgument(args, id, d))
+        return NULL;
+    return PyFloat_FromDouble(self->handle->update(id, d));
+}
+
+PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args)
+{
+    std::string id;
+    jubafvconv::datum d;
+    if (!ParseArgument(args, id, d))
+        return NULL;
+    return PyFloat_FromDouble(self->handle->overwrite(id, d));
+}
+
+PyObject *AnomalyGetAllRows(AnomalyObject *self, PyObject *args)
+{
+    return Convert(self->handle->get_all_rows());
+}

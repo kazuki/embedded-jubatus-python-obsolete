@@ -43,10 +43,10 @@
 - [X] [Anomaly](http://jubat.us/ja/api_anomaly.html)
   - [X] add
   - [X] calc_score
-  - [ ] clear_row
-  - [ ] update
-  - [ ] overwrite
-  - [ ] get_all_rows
+  - [X] clear_row
+  - [X] update
+  - [X] overwrite
+  - [X] get_all_rows
   - [ ] load / dump / clear / get_config
 - [X] [Clustering](http://jubat.us/ja/api_clustering.html)
   - [ ] push

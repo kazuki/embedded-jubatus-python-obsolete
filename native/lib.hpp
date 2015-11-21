@@ -97,6 +97,10 @@ int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs);
 void AnomalyDealloc(AnomalyObject *self);
 PyObject *AnomalyAdd(AnomalyObject *self, PyObject *args);
 PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyClearRow(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyUpdate(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyGetAllRows(AnomalyObject *self, PyObject *args);
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs);
 void RecommenderDealloc(RecommenderObject *self);
@@ -150,6 +154,10 @@ static PyMethodDef ClassifierMethods[] = {
 static PyMethodDef AnomalyMethods[] = {
     {"add", (PyCFunction)AnomalyAdd, METH_O, ""},
     {"calc_score", (PyCFunction)AnomalyCalcScore, METH_O, ""},
+    {"clear_row", (PyCFunction)AnomalyClearRow, METH_O, ""},
+    {"update", (PyCFunction)AnomalyUpdate, METH_VARARGS, ""},
+    {"overwrite", (PyCFunction)AnomalyOverwrite, METH_VARARGS, ""},
+    {"get_all_rows", (PyCFunction)AnomalyGetAllRows, METH_NOARGS, ""},
     {"clear", (PyCFunction)CommonApiClear<AnomalyObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<AnomalyObject>, METH_NOARGS, ""},
     {NULL}

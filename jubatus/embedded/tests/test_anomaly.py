@@ -51,3 +51,8 @@ def test_anomaly():
     x.clear()
     assert x.add(Datum({'x': 0.1})).score == float('inf')
     assert json.loads(x.get_config())
+
+    p = x.add(Datum({'x': 0.2}))
+    assert x.update(p.id, Datum({'x': 0.2})) == p.score
+    assert x.overwrite(p.id, Datum({'x': 0.2})) == p.score
+    assert len(x.get_all_rows()) == 2
