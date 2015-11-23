@@ -90,8 +90,6 @@ PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args);
 PyObject *ClassifierDeleteLabel(ClassifierObject *self, PyObject *args);
 PyObject *ClassifierDump(ClassifierObject *self, PyObject *args);
 PyObject *ClassifierLoad(ClassifierObject *self, PyObject *args);
-PyObject *ClassifierClear(ClassifierObject *self, PyObject *args);
-PyObject *ClassifierGetConfig(ClassifierObject *self, PyObject *args);
 
 int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs);
 void AnomalyDealloc(AnomalyObject *self);
