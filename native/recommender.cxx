@@ -3,6 +3,8 @@
 #include "helper.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;
+static const std::string TYPE("recommender");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -132,4 +134,14 @@ PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args)
     if (!PyDatumToNativeDatum(args, datum))
         return NULL;
     return PyFloat_FromDouble(self->handle->calc_l2norm(datum));
+}
+
+PyObject *RecommenderDump(RecommenderObject *self, PyObject *args)
+{
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
+}
+
+PyObject *RecommenderLoad(RecommenderObject *self, PyObject *args)
+{
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }

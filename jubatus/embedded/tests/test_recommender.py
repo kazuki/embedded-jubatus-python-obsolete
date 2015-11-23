@@ -66,3 +66,7 @@ def test():
     x.clear()
     assert len(x.get_all_rows()) == 0
     assert json.loads(x.get_config())
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

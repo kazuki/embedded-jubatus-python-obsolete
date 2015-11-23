@@ -70,3 +70,7 @@ def test():
                                          'b0', 'b1', 'b2', 'b3'])
 
     assert json.loads(x.get_config())
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

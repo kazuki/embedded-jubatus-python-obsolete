@@ -70,3 +70,7 @@ def test():
     assert isinstance(c, list)
     assert isinstance(c[0], WeightedDatum)
     assert json.loads(x.get_config())
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

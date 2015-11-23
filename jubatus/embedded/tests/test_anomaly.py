@@ -56,3 +56,7 @@ def test_anomaly():
     assert x.update(p.id, Datum({'x': 0.2})) == p.score
     assert x.overwrite(p.id, Datum({'x': 0.2})) == p.score
     assert len(x.get_all_rows()) == 2
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

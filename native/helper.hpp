@@ -1,6 +1,7 @@
 #ifndef EMBEDDED_JUBATUS_PYTHON_HELPER_HPP
 #define EMBEDDED_JUBATUS_PYTHON_HELPER_HPP
 
+#include <jubatus/core/framework/stream_writer.hpp>
 #include "lib.hpp"
 
 int PyLongToNative(PyObject *py_long, long &out);
@@ -102,6 +103,37 @@ int ParseInitArgsWithoutConv(T* self, PyObject *args, std::string &out_method,
         return 0;
     }
     return 1;
+}
+
+template<typename T>
+PyObject *CommonApiDump(T *self, const std::string &type, uint64_t data_ver)
+{
+    static const std::string ID("");
+    msgpack::sbuffer user_data_buf;
+    {
+        jubaframework::stream_writer<msgpack::sbuffer> st(user_data_buf);
+        jubaframework::jubatus_packer jp(st);
+        jubaframework::packer packer(jp);
+        packer.pack_array(2);
+        packer.pack(data_ver);
+        self->handle->pack(packer);
+    }
+    return SerializeModel(type, *self->config, ID, user_data_buf);
+}
+
+template<typename T>
+PyObject *CommonApiLoad(T *self, PyObject *args, const std::string &type, uint64_t data_ver)
+{
+    msgpack::unpacked unpacked;
+    uint64_t user_data_version;
+    msgpack::object *user_data;
+    std::string model_type, model_id, model_config;
+    if (!LoadModelHelper(args, unpacked, model_type, model_id, model_config, &user_data_version, &user_data))
+        return NULL;
+    if (model_type != type || user_data_version != data_ver || *(self->config) != model_config)
+        return NULL;
+    self->handle->unpack(*user_data);
+    Py_RETURN_NONE;
 }
 
 #endif

@@ -4,6 +4,8 @@
 #include "helper.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;
+static const std::string TYPE("nearest_neighbor");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int NearestNeighborInit(NearestNeighborObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -92,4 +94,14 @@ PyObject *NearestNeighborSimilarRowFromDatum(NearestNeighborObject *self, PyObje
 PyObject *NearestNeighborGetAllRows(NearestNeighborObject *self, PyObject *args)
 {
     return Convert(self->handle->get_all_rows());
+}
+
+PyObject *NearestNeighborDump(NearestNeighborObject *self, PyObject *args)
+{
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
+}
+
+PyObject *NearestNeighborLoad(NearestNeighborObject *self, PyObject *args)
+{
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }

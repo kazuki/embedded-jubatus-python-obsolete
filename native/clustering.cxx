@@ -3,6 +3,8 @@
 #include "helper.hpp"
 
 static PyTypeObject *WeightedDatumType = NULL;
+static const std::string TYPE("clustering");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int ClusteringInit(ClusteringObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -105,4 +107,14 @@ PyObject *ClusteringGetNearestMembers(ClusteringObject *self, PyObject *args)
     if (!PyDatumToNativeDatum(args, point))
         return NULL;
     return Convert(self->handle->get_nearest_members(point));
+}
+
+PyObject *ClusteringDump(ClusteringObject *self, PyObject *args)
+{
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
+}
+
+PyObject *ClusteringLoad(ClusteringObject *self, PyObject *args)
+{
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }

@@ -24,3 +24,7 @@ def test():
     x = Bandit(BANDIT_CONFIG)
     # TODO
     assert json.loads(x.get_config())
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

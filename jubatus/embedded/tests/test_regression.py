@@ -54,3 +54,7 @@ def test():
     assert ret[0] >= 8.0 and ret[0] < 9.0
     assert ret[1] >= 0.0 and ret[1] < 1.0
     assert json.loads(x.get_config())
+
+    # エラーが発生しないことだけ確認
+    model = x.dump()
+    x.load(model)

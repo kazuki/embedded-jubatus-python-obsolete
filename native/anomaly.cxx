@@ -3,6 +3,8 @@
 #include "helper.hpp"
 
 static PyTypeObject *IdWithScoreType = NULL;
+static const std::string TYPE("anomaly");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int AnomalyInit(AnomalyObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -86,4 +88,14 @@ PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args)
 PyObject *AnomalyGetAllRows(AnomalyObject *self, PyObject *args)
 {
     return Convert(self->handle->get_all_rows());
+}
+
+PyObject *AnomalyDump(AnomalyObject *self, PyObject *args)
+{
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
+}
+
+PyObject *AnomalyLoad(AnomalyObject *self, PyObject *args)
+{
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }

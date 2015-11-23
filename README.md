@@ -20,7 +20,7 @@
 - [X] [Regression](http://jubat.us/ja/api_regression.html)
   - [X] train
   - [X] estimate
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Recommender](http://jubat.us/ja/api_recommender.html)
   - [X] clear_row
   - [X] update_row
@@ -32,14 +32,14 @@
   - [X] get_all_rows
   - [X] calc_similarity
   - [X] calc_l2norm
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Nearest Neighbor](http://jubat.us/ja/api_nearest_neighbor.html)
   - [X] set_row
   - [X] neighbor_row_from_id
   - [X] similar_row_from_id
   - [X] similar_row_from_datum
   - [X] get_all_rows
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Anomaly](http://jubat.us/ja/api_anomaly.html)
   - [X] add
   - [X] calc_score
@@ -47,7 +47,7 @@
   - [X] update
   - [X] overwrite
   - [X] get_all_rows
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Clustering](http://jubat.us/ja/api_clustering.html)
   - [X] push
   - [X] get_revision
@@ -55,7 +55,7 @@
   - [X] get_k_center
   - [X] get_nearest_center
   - [X] get_nearest_members
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Burst](http://jubat.us/ja/api_burst.html)
   - [ ] add_documents
   - [ ] get_result
@@ -66,7 +66,7 @@
   - [ ] add_keyword
   - [ ] remove_keyword
   - [ ] remove_all_keywords
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [X] [Bandit](http://jubat.us/ja/api_bandit.html)
   - [ ] register_arm
   - [ ] delete_arm
@@ -74,6 +74,6 @@
   - [ ] register_reward
   - [ ] get_arm_info
   - [ ] reset
-  - [ ] load / dump / clear / get_config
+  - [X] load / dump / clear / get_config
 - [ ] [Stat](http://jubat.us/ja/api_stat.html) (対応予定無し)
 - [ ] [Graph](http://jubat.us/ja/api_graph.html) (対応予定無し)

@@ -1,4 +1,3 @@
-#include <jubatus/core/framework/stream_writer.hpp>
 #include <jubatus/core/storage/storage_factory.hpp>
 #include <jubatus/core/classifier/classifier_factory.hpp>
 #include "lib.hpp"
@@ -6,6 +5,7 @@
 
 static PyTypeObject *EstimateResultType = NULL;
 static const std::string TYPE("classifier");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int ClassifierInit(ClassifierObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -112,29 +112,10 @@ PyObject *ClassifierDeleteLabel(ClassifierObject *self, PyObject *args)
 
 PyObject *ClassifierDump(ClassifierObject *self, PyObject *args)
 {
-    static const std::string ID("");
-    msgpack::sbuffer user_data_buf;
-    {
-        jubaframework::stream_writer<msgpack::sbuffer> st(user_data_buf);
-        jubaframework::jubatus_packer jp(st);
-        jubaframework::packer packer(jp);
-        packer.pack_array(2);
-        packer.pack((uint64_t)1); // Ref: jubatus/server/server/classifier_serv.cpp get_user_data_version
-        self->handle->pack(packer);
-    }
-    return SerializeModel(TYPE, *self->config, ID, user_data_buf);
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
 }
 
 PyObject *ClassifierLoad(ClassifierObject *self, PyObject *args)
 {
-    msgpack::unpacked unpacked;
-    uint64_t user_data_version;
-    msgpack::object *user_data;
-    std::string model_type, model_id, model_config;
-    if (!LoadModelHelper(args, unpacked, model_type, model_id, model_config, &user_data_version, &user_data))
-        return NULL;
-    if (model_type != TYPE || *(self->config) != model_config)
-        return NULL;
-    self->handle->unpack(*user_data);
-    Py_RETURN_NONE;
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }

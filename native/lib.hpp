@@ -99,6 +99,8 @@ PyObject *AnomalyClearRow(AnomalyObject *self, PyObject *args);
 PyObject *AnomalyUpdate(AnomalyObject *self, PyObject *args);
 PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args);
 PyObject *AnomalyGetAllRows(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyDump(AnomalyObject *self, PyObject *args);
+PyObject *AnomalyLoad(AnomalyObject *self, PyObject *args);
 
 int RecommenderInit(RecommenderObject *self, PyObject *args, PyObject *kwargs);
 void RecommenderDealloc(RecommenderObject *self);
@@ -112,20 +114,26 @@ PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args);
 PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderDump(RecommenderObject *self, PyObject *args);
+PyObject *RecommenderLoad(RecommenderObject *self, PyObject *args);
 
 int RegressionInit(RegressionObject *self, PyObject *args, PyObject *kwargs);
+void RegressionDealloc(RegressionObject *self);
 PyObject *RegressionTrain(RegressionObject *self, PyObject *args);
 PyObject *RegressionEstimate(RegressionObject *self, PyObject *args);
-void RegressionDealloc(RegressionObject *self);
+PyObject *RegressionDump(RegressionObject *self, PyObject *args);
+PyObject *RegressionLoad(RegressionObject *self, PyObject *args);
 
 int NearestNeighborInit(NearestNeighborObject *self, PyObject *args, PyObject *kwargs);
+void NearestNeighborDealloc(NearestNeighborObject *self);
 PyObject *NearestNeighborSetRow(NearestNeighborObject *self, PyObject *args);
 PyObject *NearestNeighborNeighborRowFromId(NearestNeighborObject *self, PyObject *args);
 PyObject *NearestNeighborNeighborRowFromDatum(NearestNeighborObject *self, PyObject *args);
 PyObject *NearestNeighborSimilarRowFromId(NearestNeighborObject *self, PyObject *args);
 PyObject *NearestNeighborSimilarRowFromDatum(NearestNeighborObject *self, PyObject *args);
 PyObject *NearestNeighborGetAllRows(NearestNeighborObject *self, PyObject *args);
-void NearestNeighborDealloc(NearestNeighborObject *self);
+PyObject *NearestNeighborDump(NearestNeighborObject *self, PyObject *args);
+PyObject *NearestNeighborLoad(NearestNeighborObject *self, PyObject *args);
 
 int ClusteringInit(ClusteringObject *self, PyObject *args, PyObject *kwargs);
 void ClusteringDealloc(ClusteringObject *self);
@@ -135,12 +143,18 @@ PyObject *ClusteringGetCoreMembers(ClusteringObject *self, PyObject *args);
 PyObject *ClusteringGetKCenter(ClusteringObject *self, PyObject *args);
 PyObject *ClusteringGetNearestCenter(ClusteringObject *self, PyObject *args);
 PyObject *ClusteringGetNearestMembers(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringDump(ClusteringObject *self, PyObject *args);
+PyObject *ClusteringLoad(ClusteringObject *self, PyObject *args);
 
 int BurstInit(BurstObject *self, PyObject *args, PyObject *kwargs);
 void BurstDealloc(BurstObject *self);
+PyObject *BurstDump(BurstObject *self, PyObject *args);
+PyObject *BurstLoad(BurstObject *self, PyObject *args);
 
 int BanditInit(BanditObject *self, PyObject *args, PyObject *kwargs);
 void BanditDealloc(BanditObject *self);
+PyObject *BanditDump(BanditObject *self, PyObject *args);
+PyObject *BanditLoad(BanditObject *self, PyObject *args);
 
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
@@ -162,6 +176,8 @@ static PyMethodDef AnomalyMethods[] = {
     {"update", (PyCFunction)AnomalyUpdate, METH_VARARGS, ""},
     {"overwrite", (PyCFunction)AnomalyOverwrite, METH_VARARGS, ""},
     {"get_all_rows", (PyCFunction)AnomalyGetAllRows, METH_NOARGS, ""},
+    {"dump", (PyCFunction)AnomalyDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)AnomalyLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<AnomalyObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<AnomalyObject>, METH_NOARGS, ""},
     {NULL}
@@ -178,6 +194,8 @@ static PyMethodDef RecommenderMethods[] = {
     {"get_all_rows", (PyCFunction)RecommenderGetAllRows, METH_NOARGS, ""},
     {"calc_similarity", (PyCFunction)RecommenderCalcSimilarity, METH_VARARGS, ""},
     {"calc_l2norm", (PyCFunction)RecommenderCalcL2Norm, METH_O, ""},
+    {"dump", (PyCFunction)RecommenderDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)RecommenderLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<RecommenderObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<RecommenderObject>, METH_NOARGS, ""},
     {NULL}
@@ -186,6 +204,8 @@ static PyMethodDef RecommenderMethods[] = {
 static PyMethodDef RegressionMethods[] = {
     {"train", (PyCFunction)RegressionTrain, METH_O, ""},
     {"estimate", (PyCFunction)RegressionEstimate, METH_O, ""},
+    {"dump", (PyCFunction)RegressionDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)RegressionLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<RegressionObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<RegressionObject>, METH_NOARGS, ""},
     {NULL}
@@ -198,6 +218,8 @@ static PyMethodDef NearestNeighborMethods[] = {
     {"similar_row_from_id", (PyCFunction)NearestNeighborSimilarRowFromId, METH_VARARGS, ""},
     {"similar_row_from_datum", (PyCFunction)NearestNeighborSimilarRowFromDatum, METH_VARARGS, ""},
     {"get_all_rows", (PyCFunction)NearestNeighborGetAllRows, METH_NOARGS, ""},
+    {"dump", (PyCFunction)NearestNeighborDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)NearestNeighborLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<NearestNeighborObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<NearestNeighborObject>, METH_NOARGS, ""},
     {NULL}
@@ -210,18 +232,24 @@ static PyMethodDef ClusteringMethods[] = {
     {"get_k_center", (PyCFunction)ClusteringGetKCenter, METH_NOARGS, ""},
     {"get_nearest_center", (PyCFunction)ClusteringGetNearestCenter, METH_O, ""},
     {"get_nearest_members", (PyCFunction)ClusteringGetNearestMembers, METH_O, ""},
+    {"dump", (PyCFunction)ClusteringDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)ClusteringLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<ClusteringObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<ClusteringObject>, METH_NOARGS, ""},
     {NULL}
 };
 
 static PyMethodDef BurstMethods[] = {
+    {"dump", (PyCFunction)BurstDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)BurstLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<BurstObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<BurstObject>, METH_NOARGS, ""},
     {NULL}
 };
 
 static PyMethodDef BanditMethods[] = {
+    {"dump", (PyCFunction)BanditDump, METH_NOARGS, ""},
+    {"load", (PyCFunction)BanditLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<BanditObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<BanditObject>, METH_NOARGS, ""},
     {NULL}

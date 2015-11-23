@@ -4,6 +4,8 @@
 #include "helper.hpp"
 
 static PyTypeObject *ScoredDatumType = NULL;
+static const std::string TYPE("regression");
+static const uint64_t USER_DATA_VERSION = 1;
 
 int RegressionInit(RegressionObject *self, PyObject *args, PyObject *kwargs)
 {
@@ -81,4 +83,14 @@ PyObject *RegressionEstimate(RegressionObject *self, PyObject *estimate_data_lis
         PyList_SetItem(out, i, PyFloat_FromDouble(self->handle->estimate(d)));
     }
     return out;
+}
+
+PyObject *RegressionDump(RegressionObject *self, PyObject *args)
+{
+    return CommonApiDump(self, TYPE, USER_DATA_VERSION);
+}
+
+PyObject *RegressionLoad(RegressionObject *self, PyObject *args)
+{
+    return CommonApiLoad(self, args, TYPE, USER_DATA_VERSION);
 }
