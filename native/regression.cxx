@@ -62,8 +62,9 @@ PyObject *RegressionTrain(RegressionObject *self, PyObject *train_data)
             Py_DECREF(datum);
             return NULL;
         }
-        self->handle->train(
-            std::pair<float, jubafvconv::datum>(score_value, d));
+        CATCH_CPP_EXCEPTION_AND_RETURN_NULL(
+            self->handle->train(
+                std::pair<float, jubafvconv::datum>(score_value, d)));
     }
     return PyLong_FromLong(PyList_Size(train_data));
 }
@@ -80,7 +81,10 @@ PyObject *RegressionEstimate(RegressionObject *self, PyObject *estimate_data_lis
             Py_DECREF(out);
             return NULL;
         }
-        PyList_SetItem(out, i, PyFloat_FromDouble(self->handle->estimate(d)));
+        double v;
+        CATCH_CPP_EXCEPTION_AND_RETURN_NULL2(v = self->handle->estimate(d),
+                                             Py_DECREF(out));
+        PyList_SetItem(out, i, PyFloat_FromDouble(v));
     }
     return out;
 }

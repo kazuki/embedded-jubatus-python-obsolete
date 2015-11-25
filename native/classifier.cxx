@@ -57,7 +57,7 @@ PyObject *ClassifierTrain(ClassifierObject *self, PyObject *list)
             return NULL;
 
         PyDatumToNativeDatum(datum, d);
-        self->handle->train(str, d);
+        CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->train(str, d));
     }
     Py_RETURN_NONE;
 }
@@ -74,7 +74,9 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
             Py_DECREF(out);
             return NULL;
         }
-        jubacore::classifier::classify_result ret = self->handle->classify(d);
+        jubacore::classifier::classify_result ret;
+        CATCH_CPP_EXCEPTION_AND_RETURN_NULL2(ret = self->handle->classify(d),
+                                             Py_DECREF(out));
         PyObject *tmp = PyList_New(ret.size());
         for (int j = 0; j < ret.size(); ++j) {
             PyObject *args = PyTuple_New(2);
@@ -89,7 +91,9 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
 
 PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*)
 {
-    return Convert(self->handle->get_labels());
+    std::vector<std::string> labels;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(labels = self->handle->get_labels());
+    return Convert(labels);
 }
 
 PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args)
@@ -97,7 +101,7 @@ PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args)
     std::string label;
     if (!PyUnicodeToUTF8(args, label))
         return NULL;
-    self->handle->set_label(label);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->set_label(label));
     Py_RETURN_NONE;
 }
 
@@ -106,7 +110,7 @@ PyObject *ClassifierDeleteLabel(ClassifierObject *self, PyObject *args)
     std::string label;
     if (!PyUnicodeToUTF8(args, label))
         return NULL;
-    self->handle->delete_label(label);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->delete_label(label));
     Py_RETURN_NONE;
 }
 

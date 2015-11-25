@@ -44,7 +44,7 @@ PyObject *NearestNeighborSetRow(NearestNeighborObject *self, PyObject *args)
     jubafvconv::datum datum;
     if (!ParseArgument(args, id, datum))
         return NULL;
-    self->handle->set_row(id, datum);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->set_row(id, datum));
     Py_RETURN_TRUE;
 }
 
@@ -64,9 +64,9 @@ PyObject *NearestNeighborNeighborRowFromDatum(NearestNeighborObject *self, PyObj
     long size;
     if (!ParseArgument(args, d, size))
         return NULL;
-    return ConvertToIdWithScoreList(
-        self->handle->neighbor_row_from_datum(d, size),
-        IdWithScoreType);
+    std::vector<std::pair<std::string, float> > list;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(list = self->handle->neighbor_row_from_datum(d, size));
+    return ConvertToIdWithScoreList(list, IdWithScoreType);
 }
 
 PyObject *NearestNeighborSimilarRowFromId(NearestNeighborObject *self, PyObject *args)
@@ -75,9 +75,9 @@ PyObject *NearestNeighborSimilarRowFromId(NearestNeighborObject *self, PyObject 
     long size;
     if (!ParseArgument(args, id, size))
         return NULL;
-    return ConvertToIdWithScoreList(
-        self->handle->similar_row(id, size),
-        IdWithScoreType);
+    std::vector<std::pair<std::string, float> > list;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(list = self->handle->similar_row(id, size));
+    return ConvertToIdWithScoreList(list, IdWithScoreType);
 }
 
 PyObject *NearestNeighborSimilarRowFromDatum(NearestNeighborObject *self, PyObject *args)
@@ -86,14 +86,16 @@ PyObject *NearestNeighborSimilarRowFromDatum(NearestNeighborObject *self, PyObje
     long size;
     if (!ParseArgument(args, d, size))
         return NULL;
-    return ConvertToIdWithScoreList(
-        self->handle->similar_row(d, size),
-        IdWithScoreType);
+    std::vector<std::pair<std::string, float> > list;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(list = self->handle->similar_row(d, size));
+    return ConvertToIdWithScoreList(list, IdWithScoreType);
 }
 
 PyObject *NearestNeighborGetAllRows(NearestNeighborObject *self, PyObject *args)
 {
-    return Convert(self->handle->get_all_rows());
+    std::vector<std::string> rows;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(rows = self->handle->get_all_rows());
+    return Convert(rows);
 }
 
 PyObject *NearestNeighborDump(NearestNeighborObject *self, PyObject *args)

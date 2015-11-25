@@ -136,4 +136,23 @@ PyObject *CommonApiLoad(T *self, PyObject *args, const std::string &type, uint64
     Py_RETURN_NONE;
 }
 
+#define CATCH_CPP_EXCEPTION_AND_RETURN_NULL(expr) {\
+    try {                                          \
+        expr;                                      \
+    } catch (std::exception &e) {                  \
+        PyErr_SetString(PyExc_TypeError, e.what());\
+        return NULL;                               \
+    }                                              \
+}
+
+#define CATCH_CPP_EXCEPTION_AND_RETURN_NULL2(expr, catch_expr) {\
+    try {                                                       \
+        expr;                                                   \
+    } catch (std::exception &e) {                               \
+        catch_expr;                                             \
+        PyErr_SetString(PyExc_TypeError, e.what());             \
+        return NULL;                                            \
+    }                                                           \
+}
+
 #endif

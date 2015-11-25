@@ -52,7 +52,7 @@ PyObject *ClusteringPush(ClusteringObject *self, PyObject *args)
         }
         points.push_back(d);
     }
-    self->handle->push(points);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->push(points));
     Py_RETURN_TRUE;
 }
 
@@ -75,7 +75,8 @@ PyObject *ClusteringGetRevision(ClusteringObject *self, PyObject *args)
 
 PyObject *ClusteringGetCoreMembers(ClusteringObject *self, PyObject *args)
 {
-    jubacore::clustering::cluster_set clusters = self->handle->get_core_members();
+    jubacore::clustering::cluster_set clusters;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(clusters = self->handle->get_core_members());
     PyObject *out = PyList_New(clusters.size());
     for (int i = 0; i < clusters.size(); ++i) {
         PyList_SetItem(out, i, Convert(clusters[i]));
@@ -85,7 +86,8 @@ PyObject *ClusteringGetCoreMembers(ClusteringObject *self, PyObject *args)
 
 PyObject *ClusteringGetKCenter(ClusteringObject *self, PyObject *args)
 {
-    std::vector<jubafvconv::datum> points = self->handle->get_k_center();
+    std::vector<jubafvconv::datum> points;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(points = self->handle->get_k_center());
     PyObject *out = PyList_New(points.size());
     for (int i = 0; i < points.size(); ++i) {
         PyList_SetItem(out, i, NativeDatumToPyDatum(points[i]));
@@ -95,10 +97,11 @@ PyObject *ClusteringGetKCenter(ClusteringObject *self, PyObject *args)
 
 PyObject *ClusteringGetNearestCenter(ClusteringObject *self, PyObject *args)
 {
-    jubafvconv::datum point;
+    jubafvconv::datum point, nearest;
     if (!PyDatumToNativeDatum(args, point))
         return NULL;
-    return NativeDatumToPyDatum(self->handle->get_nearest_center(point));
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(nearest = self->handle->get_nearest_center(point));
+    return NativeDatumToPyDatum(nearest);
 }
 
 PyObject *ClusteringGetNearestMembers(ClusteringObject *self, PyObject *args)
@@ -106,7 +109,9 @@ PyObject *ClusteringGetNearestMembers(ClusteringObject *self, PyObject *args)
     jubafvconv::datum point;
     if (!PyDatumToNativeDatum(args, point))
         return NULL;
-    return Convert(self->handle->get_nearest_members(point));
+    jubacore::clustering::cluster_unit members;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(members = self->handle->get_nearest_members(point));
+    return Convert(members);
 }
 
 PyObject *ClusteringDump(ClusteringObject *self, PyObject *args)

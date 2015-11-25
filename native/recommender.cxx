@@ -41,7 +41,7 @@ PyObject *RecommenderClearRow(RecommenderObject *self, PyObject *args)
     std::string id;
     if (!PyUnicodeToUTF8(args, id))
         return NULL;
-    self->handle->clear_row(id);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->clear_row(id));
     Py_RETURN_TRUE;
 }
 
@@ -51,7 +51,7 @@ PyObject *RecommenderUpdateRow(RecommenderObject *self, PyObject *args)
     jubafvconv::datum datum;
     if (!ParseArgument(args, id, datum))
         return NULL;
-    self->handle->update_row(id, datum);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->update_row(id, datum));
     Py_RETURN_TRUE;
 }
 
@@ -60,7 +60,8 @@ PyObject *RecommenderCompleteRowFromId(RecommenderObject *self, PyObject *args)
     std::string id;
     if (!PyUnicodeToUTF8(args, id))
         return NULL;
-    jubafvconv::datum datum = self->handle->complete_row_from_id(id);
+    jubafvconv::datum datum;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(datum = self->handle->complete_row_from_id(id));
     return NativeDatumToPyDatum(datum);
 }
 
@@ -69,7 +70,7 @@ PyObject *RecommenderCompleteRowFromDatum(RecommenderObject *self, PyObject *arg
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(args, datum))
         return NULL;
-    datum = self->handle->complete_row_from_datum(datum);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(datum = self->handle->complete_row_from_datum(datum));
     return NativeDatumToPyDatum(datum);
 }
 
@@ -79,9 +80,9 @@ PyObject *RecommenderSimilarRowFromId(RecommenderObject *self, PyObject *args)
     long size;
     if (!ParseArgument(args, id, size))
         return NULL;
-    return ConvertToIdWithScoreList(
-        self->handle->similar_row_from_id(id, size),
-        IdWithScoreType);
+    std::vector<std::pair<std::string, float> > list;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(list = self->handle->similar_row_from_id(id, size));
+    return ConvertToIdWithScoreList(list, IdWithScoreType);
 }
 
 PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args)
@@ -90,9 +91,9 @@ PyObject *RecommenderSimilarRowFromDatum(RecommenderObject *self, PyObject *args
     long size;
     if (!ParseArgument(args, datum, size))
         return NULL;
-    return ConvertToIdWithScoreList(
-        self->handle->similar_row_from_datum(datum, size),
-        IdWithScoreType);
+    std::vector<std::pair<std::string, float> > list;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(list = self->handle->similar_row_from_datum(datum, size));
+    return ConvertToIdWithScoreList(list, IdWithScoreType);
 }
 
 PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args)
@@ -100,12 +101,15 @@ PyObject *RecommenderDecodeRow(RecommenderObject *self, PyObject *args)
     std::string id;
     if (!PyUnicodeToUTF8(args, id))
         return NULL;
-    return NativeDatumToPyDatum(self->handle->decode_row(id));
+    jubafvconv::datum d;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(d = self->handle->decode_row(id));
+    return NativeDatumToPyDatum(d);
 }
 
 PyObject *RecommenderGetAllRows(RecommenderObject *self, PyObject *args)
 {
-    std::vector<std::string> vec = self->handle->get_all_rows();
+    std::vector<std::string> vec;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(vec = self->handle->get_all_rows());
     PyObject *ret = PyList_New(vec.size());
     for (int i = 0; i < vec.size(); ++i) {
         PyList_SetItem(ret, i, PyUnicode_DecodeUTF8_FromString(vec[i]));
@@ -125,7 +129,9 @@ PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args)
         return NULL;
     if (!PyDatumToNativeDatum(py_datum2, datum2))
         return NULL;
-    return PyFloat_FromDouble(self->handle->calc_similality(datum1, datum2));
+    double similarity;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(similarity = self->handle->calc_similality(datum1, datum2));
+    return PyFloat_FromDouble(similarity);
 }
 
 PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args)
@@ -133,7 +139,9 @@ PyObject *RecommenderCalcL2Norm(RecommenderObject *self, PyObject *args)
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(args, datum))
         return NULL;
-    return PyFloat_FromDouble(self->handle->calc_l2norm(datum));
+    double l2norm;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(l2norm = self->handle->calc_l2norm(datum));
+    return PyFloat_FromDouble(l2norm);
 }
 
 PyObject *RecommenderDump(RecommenderObject *self, PyObject *args)

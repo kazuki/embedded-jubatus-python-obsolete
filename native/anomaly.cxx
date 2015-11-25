@@ -43,7 +43,8 @@ PyObject *AnomalyAdd(AnomalyObject *self, PyObject *py_datum)
     if (!PyDatumToNativeDatum(py_datum, datum))
         return NULL;
     std::string id_str = jubalang::lexical_cast<std::string>(self->idgen++);
-    std::pair<std::string, float> ret = self->handle->add(id_str, datum);
+    std::pair<std::string, float> ret;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(ret = self->handle->add(id_str, datum));
     PyObject *args = PyTuple_New(2);
     PyTuple_SetItem(args, 0, PyUnicode_DecodeUTF8_FromString(ret.first));
     PyTuple_SetItem(args, 1, PyFloat_FromDouble(ret.second));
@@ -55,7 +56,9 @@ PyObject *AnomalyCalcScore(AnomalyObject *self, PyObject *args)
     jubafvconv::datum datum;
     if (!PyDatumToNativeDatum(args, datum))
         return NULL;
-    return PyFloat_FromDouble(self->handle->calc_score(datum));
+    double score;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(score = self->handle->calc_score(datum));
+    return PyFloat_FromDouble(score);
 }
 
 PyObject *AnomalyClearRow(AnomalyObject *self, PyObject *args)
@@ -63,7 +66,7 @@ PyObject *AnomalyClearRow(AnomalyObject *self, PyObject *args)
     std::string id;
     if (!PyUnicodeToUTF8(args, id))
         return NULL;
-    self->handle->clear_row(id);
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(self->handle->clear_row(id));
     Py_RETURN_TRUE;
 }
 
@@ -73,7 +76,9 @@ PyObject *AnomalyUpdate(AnomalyObject *self, PyObject *args)
     jubafvconv::datum d;
     if (!ParseArgument(args, id, d))
         return NULL;
-    return PyFloat_FromDouble(self->handle->update(id, d));
+    double score;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(score = self->handle->update(id, d));
+    return PyFloat_FromDouble(score);
 }
 
 PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args)
@@ -82,12 +87,16 @@ PyObject *AnomalyOverwrite(AnomalyObject *self, PyObject *args)
     jubafvconv::datum d;
     if (!ParseArgument(args, id, d))
         return NULL;
-    return PyFloat_FromDouble(self->handle->overwrite(id, d));
+    double score;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(score = self->handle->overwrite(id, d));
+    return PyFloat_FromDouble(score);
 }
 
 PyObject *AnomalyGetAllRows(AnomalyObject *self, PyObject *args)
 {
-    return Convert(self->handle->get_all_rows());
+    std::vector<std::string> rows;
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(rows = self->handle->get_all_rows());
+    return Convert(rows);
 }
 
 PyObject *AnomalyDump(AnomalyObject *self, PyObject *args)
