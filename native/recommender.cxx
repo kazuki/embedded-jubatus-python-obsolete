@@ -130,7 +130,7 @@ PyObject *RecommenderCalcSimilarity(RecommenderObject *self, PyObject *args)
     if (!PyDatumToNativeDatum(py_datum2, datum2))
         return NULL;
     double similarity;
-    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(similarity = self->handle->calc_similality(datum1, datum2));
+    CATCH_CPP_EXCEPTION_AND_RETURN_NULL(similarity = self->handle->calc_similarity(datum1, datum2));
     return PyFloat_FromDouble(similarity);
 }
 
