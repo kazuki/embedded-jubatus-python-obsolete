@@ -35,18 +35,16 @@ int PyLongToNative(PyObject *py_long, long &out)
 int PyUnicodeToUTF8(PyObject *py_str, std::string &out)
 {
 #ifdef IS_PY3
-    PyObject *utf8 = PyUnicode_AsUTF8String(py_str);
-    if (!utf8) return 0;
-    out.assign(PyBytes_AsString(utf8), PyBytes_Size(utf8));
-    Py_DECREF(utf8);
+    ScopedPyRef utf8 = ScopedPyRef(PyUnicode_AsUTF8String(py_str));
+    if (utf8.is_null()) return 0;
+    out.assign(PyBytes_AsString(utf8.get()), PyBytes_Size(utf8.get()));
 #else
     if (PyString_Check(py_str)) {
         out.assign(PyString_AsString(py_str), PyString_Size(py_str));
     } else {
-        PyObject *utf8 = PyUnicode_AsUTF8String(py_str);
-        if (!utf8) return 0;
-        out.assign(PyString_AsString(utf8), PyString_Size(utf8));
-        Py_DECREF(utf8);
+        ScopedPyRef utf8 = ScopedPyRef(PyUnicode_AsUTF8String(py_str));
+        if (utf8.is_null()) return 0;
+        out.assign(PyString_AsString(utf8.get()), PyString_Size(utf8.get()));
     }
 #endif
     return 1;
@@ -203,13 +201,13 @@ PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum)
         PyDict_SetItem(dict, key, val);
     }
 
-    PyObject *args = PyTuple_New(1);
-    PyTuple_SetItem(args, 0, dict);
+    ScopedPyRef args = ScopedPyRef(PyTuple_New(1));
+    PyTuple_SetItem(args.get(), 0, dict);
 #ifdef IS_PY3
-    PyObject *py_datum = DatumType->tp_new(DatumType, args, NULL);
-    DatumType->tp_init(py_datum, args, NULL);
+    PyObject *py_datum = DatumType->tp_new(DatumType, args.get(), NULL);
+    DatumType->tp_init(py_datum, args.get(), NULL);
 #else
-    PyObject *py_datum = PyInstance_New((PyObject*)DatumType, args, NULL);
+    PyObject *py_datum = PyInstance_New((PyObject*)DatumType, args.get(), NULL);
 #endif
     return py_datum;
 }
