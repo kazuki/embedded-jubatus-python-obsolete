@@ -155,4 +155,15 @@ PyObject *CommonApiLoad(T *self, PyObject *args, const std::string &type, uint64
     }                                                           \
 }
 
+class ScopedPyRef {
+public:
+    explicit ScopedPyRef(PyObject *ptr = NULL) : _ptr(ptr) {}
+    ~ScopedPyRef() { Py_CLEAR(_ptr); }
+
+    inline bool is_null() const { return _ptr == NULL; }
+    inline PyObject * get() const { return _ptr; }
+private:
+    PyObject *_ptr;
+};
+
 #endif

@@ -44,13 +44,13 @@ PyObject *ClassifierTrain(ClassifierObject *self, PyObject *list)
     if (!PyList_Check(list))
         return NULL;
     for (Py_ssize_t i = 0; i < PyList_Size(list); ++i) {
-        PyObject *labeled_datum = PyList_GetItem(list, i);
+        PyObject *labeled_datum = PyList_GetItem(list, i); // borrowed
         if (!labeled_datum)
             return NULL;
-        PyObject *label = PyTuple_GetItem(labeled_datum, 0);
+        PyObject *label = PyTuple_GetItem(labeled_datum, 0); // borrowed
         if (!label)
             return NULL;
-        PyObject *datum = PyTuple_GetItem(labeled_datum, 1);
+        PyObject *datum = PyTuple_GetItem(labeled_datum, 1); // borrowed
         if (!datum)
             return NULL;
         if (!PyUnicodeToUTF8(label, str))

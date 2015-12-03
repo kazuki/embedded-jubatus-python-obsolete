@@ -46,22 +46,13 @@ PyObject *RegressionTrain(RegressionObject *self, PyObject *train_data)
         return NULL;
     for (Py_ssize_t i = 0; i < PyList_Size(train_data); ++i) {
         PyObject *scored_datum = PyList_GetItem(train_data, i);
-        PyObject *score = PyObject_GetAttrString(scored_datum, "score"); // ret: new-ref
-        if (!score)
+        ScopedPyRef score = ScopedPyRef(PyObject_GetAttrString(scored_datum, "score"));
+        if (score.is_null() || !PyFloat_Check(score.get()))
             return NULL;
-        if (!PyFloat_Check(score)) {
-            Py_DECREF(score);
+        float score_value = (float)PyFloat_AsDouble(score.get());
+        ScopedPyRef datum = ScopedPyRef(PyObject_GetAttrString(scored_datum, "data"));
+        if (datum.is_null() || !PyDatumToNativeDatum(datum.get(), d))
             return NULL;
-        }
-        float score_value = (float)PyFloat_AsDouble(score);
-        Py_DECREF(score);
-        PyObject *datum = PyObject_GetAttrString(scored_datum, "data"); // ret: new-ref
-        if (!datum)
-            return NULL;
-        if (!PyDatumToNativeDatum(datum, d)) {
-            Py_DECREF(datum);
-            return NULL;
-        }
         CATCH_CPP_EXCEPTION_AND_RETURN_NULL(
             self->handle->train(
                 std::pair<float, jubafvconv::datum>(score_value, d)));

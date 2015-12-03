@@ -97,16 +97,16 @@ int PyDatumToNativeDatum(PyObject *py_datum, jubafvconv::datum &datum)
     datum.binary_values_.clear();
 
     for (int field_idx = 0; field_idx < 3; ++field_idx) {
-        PyObject *py_values = PyObject_GetAttrString(py_datum, FIELD_NAMES[field_idx]);
-        if (!py_values) continue;
+        ScopedPyRef py_values = ScopedPyRef(PyObject_GetAttrString(py_datum, FIELD_NAMES[field_idx]));
+        if (py_values.is_null()) continue;
 
-        for (Py_ssize_t i = 0; i < PyList_Size(py_values); ++i) {
-            PyObject *item = PyList_GetItem(py_values, i);
-            PyObject *name = PyList_GetItem(item, 0);
+        for (Py_ssize_t i = 0; i < PyList_Size(py_values.get()); ++i) {
+            PyObject *item = PyList_GetItem(py_values.get(), i); // borrowed
+            PyObject *name = PyList_GetItem(item, 0); // borrowed
             if (!name) return 0;
             if (!PyUnicodeToUTF8(name, key)) return 0;
 
-            PyObject *value = PyList_GetItem(item, 1);
+            PyObject *value = PyList_GetItem(item, 1); // borrowed
             if (!value) return 0;
             if (field_idx == 0) {
                 if (!PyUnicodeToUTF8(value, str_value)) return 0;
@@ -127,33 +127,31 @@ int PyDatumToNativeDatum(PyObject *py_datum, jubafvconv::datum &datum)
 
 int PyDictToJson(PyObject *py_dict, std::string &out)
 {
-    PyObject *m = PyImport_ImportModule("json"); // return: new-ref
-    if (!m) return 0;
-    int ret_code = 0;
-    PyObject *dump_method = PyObject_GetAttrString(m, "dumps"); // return: new-ref
-    if (dump_method) {
-        PyObject *args = PyTuple_New(1); // return: new-ref
-        Py_INCREF(py_dict);
-        PyTuple_SetItem(args, 0, py_dict); // steals py_dict ref
-        PyObject *kwargs = PyDict_New(); // return: new-ref
-        PyObject *true_obj = Py_True;
-        PyObject *false_obj = Py_False;
-        Py_INCREF(true_obj);
-        Py_INCREF(false_obj);
-        PyDict_SetItemString(kwargs, "ensure_ascii", false_obj); // steals false_obj ref
-        PyDict_SetItemString(kwargs, "sort_keys", true_obj); // steals true_obj ref
-        PyObject *json_str = PyObject_Call(dump_method, args, kwargs); // return: new-ref
-        if (json_str) {
-            if (PyUnicodeToUTF8(json_str, out))
-                ret_code = 1;
-            Py_DECREF(json_str);
-        }
-        Py_DECREF(args);
-        Py_DECREF(kwargs);
-        Py_DECREF(dump_method);
-    }
-    Py_DECREF(m);
-    return ret_code;
+    ScopedPyRef m = ScopedPyRef(PyImport_ImportModule("json"));
+    if (m.is_null())
+        return 0;
+
+    ScopedPyRef dump_method = ScopedPyRef(PyObject_GetAttrString(m.get(), "dumps"));
+    if (dump_method.is_null())
+        return 0;
+
+    ScopedPyRef args = ScopedPyRef(PyTuple_New(1));
+    Py_INCREF(py_dict);
+    PyTuple_SetItem(args.get(), 0, py_dict); // steals py_dict ref
+    ScopedPyRef kwargs = ScopedPyRef(PyDict_New());
+    PyObject *true_obj = Py_True;
+    PyObject *false_obj = Py_False;
+    Py_INCREF(true_obj);
+    Py_INCREF(false_obj);
+    PyDict_SetItemString(kwargs.get(), "ensure_ascii", false_obj); // steals false_obj ref
+    PyDict_SetItemString(kwargs.get(), "sort_keys", true_obj); // steals true_obj ref
+    ScopedPyRef json_str = ScopedPyRef(PyObject_Call(dump_method.get(), args.get(), kwargs.get()));
+    if (json_str.is_null())
+        return 0;
+
+    if (PyUnicodeToUTF8(json_str.get(), out))
+        return 1;
+    return 0;
 }
 
 PyObject* NativeDatumToPyDatum(const jubafvconv::datum &datum)
@@ -297,19 +295,16 @@ int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
                     uint64_t *user_data_version, msgpack::object **user_data)
 {
     Py_buffer view;
-    PyObject *bytes_obj = NULL;
+    ScopedPyRef bytes_obj;
     int ret = 0;
 
     if (PyObject_GetBuffer(arg, &view, PyBUF_SIMPLE) != 0) {
-        PyObject *read_attr = PyObject_GetAttrString(arg, "read");
-        if (!read_attr)
+        ScopedPyRef read_attr = ScopedPyRef(PyObject_GetAttrString(arg, "read"));
+        if (read_attr.is_null())
             return 0;
-        bytes_obj = PyObject_CallObject(read_attr, NULL);
-        Py_DECREF(read_attr);
-        if (PyObject_GetBuffer(bytes_obj, &view, PyBUF_SIMPLE) != 0) {
-            Py_DECREF(bytes_obj);
+        bytes_obj = ScopedPyRef(PyObject_CallObject(read_attr.get(), NULL));
+        if (PyObject_GetBuffer(bytes_obj.get(), &view, PyBUF_SIMPLE) != 0)
             return 0;
-        }
     }
 
     _InitJubatusVersion();
@@ -369,9 +364,7 @@ int LoadModelHelper(PyObject *arg, msgpack::unpacked& user_data_buffer,
 
         ret = 1;
     } while (0);
-
-    if (bytes_obj)
-        Py_DECREF(bytes_obj);
+    PyBuffer_Release(&view);
     return ret;
 }
 
