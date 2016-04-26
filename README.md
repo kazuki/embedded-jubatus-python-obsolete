@@ -7,6 +7,25 @@
 
 * Python 2.7.10
 * Python 3.4.3
+* Python 3.5.1
+
+## インストール方法＆テスト実行方法
+
+インストール方法
+```
+$ python ./setup.py sdist
+$ pip install dist/embedded-jubatus-*.tar.gz
+```
+
+テストの実行方法 (事前にインストールする必要があります)
+```
+$ mkdir jubatus
+$ python ./setup.py nosetests
+```
+
+python ./setup.py install では上手くインストールできないので注意．
+テストもインストールしてからじゃないと実行できませんし，
+テスト実行時にビルドが走りますがテスト対象はインストールしたライブラリになります．
 
 ## 対応しているAPI
 
