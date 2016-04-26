@@ -91,9 +91,18 @@ PyObject *ClassifierClassify(ClassifierObject *self, PyObject *list)
 
 PyObject *ClassifierGetLabels(ClassifierObject *self, PyObject*)
 {
-    std::vector<std::string> labels;
+    jubatus::core::classifier::labels_t labels;
     CATCH_CPP_EXCEPTION_AND_RETURN_NULL(labels = self->handle->get_labels());
-    return Convert(labels);
+
+    PyObject *ret = PyDict_New();
+    for (jubatus::core::classifier::labels_t::iterator it = labels.begin(); it != labels.end(); ++it) {
+        PyObject *key = PyUnicode_DecodeUTF8_FromString(it->first);
+        PyObject *val = PyLong_FromLong(it->second);
+        PyDict_SetItem(ret, key, val);
+        Py_DECREF(key);
+        Py_DECREF(val);
+    }
+    return ret;
 }
 
 PyObject *ClassifierSetLabel(ClassifierObject *self, PyObject *args)

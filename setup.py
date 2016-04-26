@@ -3,9 +3,6 @@ from setuptools import setup, find_packages, Extension
 setup(
     name='embedded-jubatus',
     version='1.0',
-    packages=[
-        'jubatus/embedded/tests'
-    ],
     install_requires=[
         'jubatus'
     ],

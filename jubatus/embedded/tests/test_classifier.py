@@ -45,7 +45,7 @@ def test_classifier_num():
     ])
     assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
             for z in y] == ['Y', 'N']
-    assert sorted(x.get_labels()) == [u'N', u'Y']
+    assert x.get_labels() == {u'N': 1, u'Y': 1}
 
     model = x.dump()
 
@@ -53,9 +53,9 @@ def test_classifier_num():
     assert len(x.get_labels()) == 0
     x.set_label(u'Y')
     x.set_label(u'N')
-    assert sorted(x.get_labels()) == [u'N', u'Y']
+    assert x.get_labels() == {u'N': 0, u'Y': 0}
     x.delete_label(u'Y')
-    assert x.get_labels() == [u'N']
+    assert x.get_labels() == {u'N': 0}
 
     x.clear()
     assert len(x.get_labels()) == 0
@@ -67,7 +67,7 @@ def test_classifier_num():
     ])
     assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
             for z in y] == ['Y', 'N']
-    assert sorted(x.get_labels()) == [u'N', u'Y']
+    assert x.get_labels() == {u'N': 1, u'Y': 1}
     assert json.loads(x.get_config())
 
 def test_classifier_str():
