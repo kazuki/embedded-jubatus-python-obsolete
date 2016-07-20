@@ -37,6 +37,9 @@ static PyMethodDef ClassifierMethods[] = {
     {"load", (PyCFunction)ClassifierLoad, METH_O, ""},
     {"clear", (PyCFunction)CommonApiClear<ClassifierObject>, METH_NOARGS, ""},
     {"get_config", (PyCFunction)CommonApiGetConfig<ClassifierObject>, METH_NOARGS, ""},
+    {"fit", (PyCFunction)ClassifierFit, METH_VARARGS, ""},
+    {"decision_function", (PyCFunction)ClassifierDecisionFunction, METH_O, ""},
+    {"predict", (PyCFunction)ClassifierPredict, METH_O, ""},
     {NULL}
 };
 

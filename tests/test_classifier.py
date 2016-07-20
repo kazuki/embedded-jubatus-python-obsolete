@@ -82,3 +82,50 @@ def test_classifier_str():
     ])
     assert [list(sorted(z, key=lambda x:x.score, reverse=True))[0].label
             for z in y] == ['Y', 'N']
+
+def test_classifier_scipy():
+    try:
+        import numpy as np
+        from scipy.sparse import csr_matrix
+    except ImportError:
+        return
+    x = Classifier(CLASSIFIER_CONFIG);
+
+    # test ndarray
+    tdata = np.array([
+        [1, 0, 1],
+        [0, 1, 1],
+    ])
+    ttargets = np.array([1, 0])
+    x.fit(tdata, ttargets)
+    y = x.predict(np.array([
+        [1, 0, 0],
+        [0, 1, 0],
+    ]))
+    assert y[0] == 1
+    assert y[1] == 0
+    y = x.decision_function(np.array([
+        [1, 0, 0],
+        [0, 1, 0],
+    ]))
+    assert len(y) == 2
+    assert len(y[0]) == 2
+    assert len(y[1]) == 2
+    assert y[0][0] < y[0][1]
+    assert y[1][0] > y[1][1]
+
+    # test csr_matrix
+    tdata = csr_matrix(tdata)
+    x.fit(tdata, ttargets)
+    y = x.predict(csr_matrix(np.array([
+        [1, 0, 0],
+        [0, 1, 0],
+    ])))
+    assert y[0] == 1
+    assert y[1] == 0
+    y = x.decision_function(csr_matrix(np.array([
+        [1, 0, 0],
+        [0, 1, 0],
+    ])))
+    assert y[0][0] < y[0][1]
+    assert y[1][0] > y[1][1]
