@@ -27,6 +27,23 @@ static struct PyModuleDef JubatusEmbeddedModule = {
 #define MODINIT_RETURN_WRAP(x)
 #endif
 
+// OLD-GCC HACK (for CentOS 6.x)
+#define DEFINE_HACK(APITYPE) \
+    PyObject *_##APITYPE##GetConfig(APITYPE##Object *self, PyObject *args) { \
+        return CommonApiGetConfig<APITYPE##Object>(self, args);              \
+    }									       \
+    PyObject *_##APITYPE##Clear(APITYPE##Object *self, PyObject *args) {     \
+        return CommonApiClear<APITYPE##Object>(self, args);		       \
+    }
+DEFINE_HACK(Classifier)
+DEFINE_HACK(Anomaly)
+DEFINE_HACK(Recommender)
+DEFINE_HACK(Regression)
+DEFINE_HACK(NearestNeighbor)
+DEFINE_HACK(Clustering)
+DEFINE_HACK(Burst)
+DEFINE_HACK(Bandit)
+
 static PyMethodDef ClassifierMethods[] = {
     {"train", (PyCFunction)ClassifierTrain, METH_O, ""},
     {"classify", (PyCFunction)ClassifierClassify, METH_O, ""},
@@ -35,8 +52,8 @@ static PyMethodDef ClassifierMethods[] = {
     {"delete_label", (PyCFunction)ClassifierDeleteLabel, METH_O, ""},
     {"dump", (PyCFunction)ClassifierDump, METH_NOARGS, ""},
     {"load", (PyCFunction)ClassifierLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<ClassifierObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<ClassifierObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_ClassifierClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_ClassifierGetConfig, METH_NOARGS, ""},
     {"fit", (PyCFunction)ClassifierFit, METH_VARARGS, ""},
     {"decision_function", (PyCFunction)ClassifierDecisionFunction, METH_O, ""},
     {"predict", (PyCFunction)ClassifierPredict, METH_O, ""},
@@ -52,8 +69,8 @@ static PyMethodDef AnomalyMethods[] = {
     {"get_all_rows", (PyCFunction)AnomalyGetAllRows, METH_NOARGS, ""},
     {"dump", (PyCFunction)AnomalyDump, METH_NOARGS, ""},
     {"load", (PyCFunction)AnomalyLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<AnomalyObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<AnomalyObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_AnomalyClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_AnomalyGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -70,8 +87,8 @@ static PyMethodDef RecommenderMethods[] = {
     {"calc_l2norm", (PyCFunction)RecommenderCalcL2Norm, METH_O, ""},
     {"dump", (PyCFunction)RecommenderDump, METH_NOARGS, ""},
     {"load", (PyCFunction)RecommenderLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<RecommenderObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<RecommenderObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_RecommenderClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_RecommenderGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -80,8 +97,8 @@ static PyMethodDef RegressionMethods[] = {
     {"estimate", (PyCFunction)RegressionEstimate, METH_O, ""},
     {"dump", (PyCFunction)RegressionDump, METH_NOARGS, ""},
     {"load", (PyCFunction)RegressionLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<RegressionObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<RegressionObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_RegressionClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_RegressionGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -94,8 +111,8 @@ static PyMethodDef NearestNeighborMethods[] = {
     {"get_all_rows", (PyCFunction)NearestNeighborGetAllRows, METH_NOARGS, ""},
     {"dump", (PyCFunction)NearestNeighborDump, METH_NOARGS, ""},
     {"load", (PyCFunction)NearestNeighborLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<NearestNeighborObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<NearestNeighborObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_NearestNeighborClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_NearestNeighborGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
@@ -108,24 +125,24 @@ static PyMethodDef ClusteringMethods[] = {
     {"get_nearest_members", (PyCFunction)ClusteringGetNearestMembers, METH_O, ""},
     {"dump", (PyCFunction)ClusteringDump, METH_NOARGS, ""},
     {"load", (PyCFunction)ClusteringLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<ClusteringObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<ClusteringObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_ClusteringClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_ClusteringGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
 static PyMethodDef BurstMethods[] = {
     {"dump", (PyCFunction)BurstDump, METH_NOARGS, ""},
     {"load", (PyCFunction)BurstLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<BurstObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<BurstObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_BurstClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_BurstGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
 static PyMethodDef BanditMethods[] = {
     {"dump", (PyCFunction)BanditDump, METH_NOARGS, ""},
     {"load", (PyCFunction)BanditLoad, METH_O, ""},
-    {"clear", (PyCFunction)CommonApiClear<BanditObject>, METH_NOARGS, ""},
-    {"get_config", (PyCFunction)CommonApiGetConfig<BanditObject>, METH_NOARGS, ""},
+    {"clear", (PyCFunction)_BanditClear, METH_NOARGS, ""},
+    {"get_config", (PyCFunction)_BanditGetConfig, METH_NOARGS, ""},
     {NULL}
 };
 
